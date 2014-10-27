@@ -1,0 +1,58 @@
+#!/bin/bash
+set -x
+
+this_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+project_root="$( cd "$this_dir/.." && pwd )"
+
+
+trim() {
+  perl -pe 's/^\s*?//g' | perl -pe 's/\s*$//g'
+}
+
+
+get_developer_machine_ip() {
+  if hash ip &> /dev/null; then
+      ip route get 8.8.8.8 | head -1 | perl -pe 's/.*\s(\S+)/\1/' | trim
+  else
+      route -v get 8.8.8.8 | tail -1 | perl -pe 's/.*\s(\S+)/\1/' | trim
+  fi
+}
+
+
+insert_ip() {
+  set -e
+
+  # get ip/port of web server, then place into Cordova config as the landing
+  # page
+  if [[ ! $IP ]]; then IP="$(get_developer_machine_ip)"; fi
+  if [[ ! $PORT ]]; then PORT='8000'; fi
+
+  local addr="http://$IP:$PORT/test/index.html"
+  addr="$(echo $addr | sed 's/\//\\\//g')"
+  local contents="$(cat "$1")"
+  local tempfile="tempconfig"
+  touch ./tempconfig
+  cat "$1" | perl -pe 's/<content src=".*/<content src="'$addr'" \/>/' > "$tempfile"
+  cp "$tempfile" "$1"
+  rm "$tempfile"
+}
+
+
+main() {
+  set -e
+
+  cd "$project_root/src"
+  mkdir -p "$project_root/src/android/res/xml"
+  touch "$project_root/src/android/res/xml/config.xml"
+  insert_ip "$project_root/src/android/res/xml/config.xml"
+
+  mkdir -p "$project_root/src/ios/BluetoothleTests"
+  touch "$project_root/src/ios/BluetoothleTests/config.xml"
+  insert_ip "$project_root/src/ios/BluetoothleTests/config.xml"
+
+  cd "$project_root"
+  python -m SimpleHTTPServer
+}
+
+
+main "$@"

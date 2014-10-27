@@ -1,0 +1,36 @@
+#!/bin/bash
+set -x
+
+this_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+project_root="$( cd "$this_dir/.." && pwd )"
+
+
+main() {
+  set -e
+
+  cd "$project_root"
+  rm -Rf ./dist
+
+  mkdir ./dist
+  cp ./src/plugin.xml ./dist/plugin.xml
+
+  mkdir -p ./dist/www
+  cp -a ./src/www/* ./dist/www/
+
+  # cordova plugman will add the "define(..." statement, so we need to take out
+  # the one we already have for development (we do that so we can symlink
+  # platform-specific js to the src/www/ copy)
+  IFS=$'\n'
+  for file in $(find src/www -name '*.js'); do
+    cat "$file" | head -n -1 | tail -n +2 > ./dist/www/"$(basename "$file")"
+  done
+
+  mkdir -p ./dist/src/android
+  cp -a ./src/android/src/com/mutualmobile/cordova/bluetoothle/* ./dist/src/android/
+
+  mkdir -p ./dist/src/ios
+  cp -a ./src/ios/BluetoothleTests/Plugins/com.mutualmobile.cordova.bluetoothle/* ./dist/src/ios/
+}
+
+
+main "$@"

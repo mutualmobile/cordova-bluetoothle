@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="format-detection" content="telephone=no" />
+        <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+        <link rel="stylesheet" type="text/css" href="/node_modules/mocha/mocha.css" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <title>MM Bluetooth LE Test</title>
+    </head>
+    <body>
+      <div id="mocha"></div>
+      <script type="text/javascript" src="/node_modules/jquery/dist/jquery.js"></script>
+      <script type="text/javascript" src="/node_modules/chai/chai.js"></script>
+      <script type="text/javascript" src="/node_modules/q/q.js"></script>
+      <script type="text/javascript" src="/node_modules/mocha/mocha.js"></script>
+      <script>mocha.setup('bdd')</script>
+
+      <script type="text/javascript">
+        var scripts = [];
+        if (navigator.userAgent.search('iPhone') !== -1) {
+          scripts.push('/src/ios/www/cordova.js');
+        }
+        if (navigator.userAgent.search('Android') !== -1) {
+          scripts.push('/src/android/assets/www/cordova.js');
+        }
+        scripts.forEach(function(src) {
+          var s = document.createElement('script');
+          s.type = 'text/javascript';
+          s.src = src;
+          document.body.appendChild(s);
+        });
+
+        window.Promise = Q.Promise;
+        
+      </script>
+
+
+      <script type="text/javascript" src="js/test.js"></script>
+      <script type="text/javascript" src="js/launch.js"></script>
+    </body>
+</html>

@@ -1,0 +1,14 @@
+#!/bin/bash
+set -x
+
+this_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+project_root="$( cd "$this_dir/.." && pwd )"
+
+
+main() {
+  export NODE_PATH="$project_root/dependencies/node_modules"
+  node "$project_root/simulator/server.js"
+}
+
+
+main "$@"
