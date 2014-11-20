@@ -24,9 +24,7 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
 
     var cancelTimeout = setTimeout(function() {
       taskIsRunning = false;
-      currentItem.errback({
-        message: 'Timed out after 5000 ms'
-      });
+      currentItem.errback(new Error('bluetoothle.' + currentItem.name + '(' + JSON.stringify(currentItem.args) + '): did not receive a response from the native side within 5000 ms'));
       processTasks();
     }, 5000);
 
