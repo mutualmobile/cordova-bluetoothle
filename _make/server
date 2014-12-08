@@ -51,7 +51,7 @@ main() {
   insert_ip "$project_root/src/ios/BluetoothleTests/config.xml"
 
   cd "$project_root"
-  python -m SimpleHTTPServer
+  ./node_modules/http-server/bin/http-server -p 8000 -c-1
 }
 
 

@@ -6,15 +6,12 @@ on an iOS/Android device and keep re-running the suite until a test fails.
 Dependencies
 ------------
 
-All dependencies are pulled from Node.js' Node Package Manager. This requires
-that you have Node.js installed:
-
-`$ brew install node`
-
-From the project root, the rest of the dependencies can be pulled with (from
-the project root):
-
-`$ npm install`
+```sh
+brew install blueutil
+brew install node
+cd /path/to/this/project
+npm install
+```
 
 
 Hacking

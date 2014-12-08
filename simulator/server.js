@@ -1,4 +1,6 @@
 var bleno = require('bleno');
+var child = require('child_process');
+
 
 var heartrate = new bleno.PrimaryService({
   uuid: '0000' + '180d' + '-0000-1000-8000-00805f9b34fb',
@@ -33,6 +35,7 @@ var command = new bleno.PrimaryService({
         callback(this.RESULT_SUCCESS, this.value);
       },
       onWriteRequest: function(data, offset, withoutResponse, callback) {
+        console.log('tet2');
         this.value = data;
         callback(this.RESULT_SUCCESS);
       }
@@ -44,8 +47,31 @@ var command = new bleno.PrimaryService({
         callback(this.RESULT_SUCCESS, this.value);
       },
       onWriteRequest: function(data, offset, withoutResponse, callback) {
+        console.log('tet');
         this.value = data;
         callback(this.RESULT_SUCCESS);
+      }
+    }),
+    new bleno.Characteristic({
+      uuid: '0000' + 'fff3' + '-0000-1000-8000-00805f9b34fb',
+      properties: ['read', 'write'],
+      onReadRequest: function(offset, callback) {
+        callback(this.RESULT_SUCCESS, this.value);
+      },
+      onWriteRequest: function(data, offset, withoutResponse, callback) {
+        console.log('TEST');
+        this.value = data;
+        var self = this;
+        callback(self.RESULT_SUCCESS);
+        /*
+         *setTimeout(function() {
+         *  callback(self.RESULT_SUCCESS);
+         *}, 1000);
+         */
+        child.exec('blueutil power 0');
+        setTimeout(function() {
+          child.exec('blueutil power 1');
+        }, 1000);
       }
     })
   ]

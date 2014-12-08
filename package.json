@@ -9,7 +9,8 @@
     "cordova": "3.5.0-0.2.7",
     "jquery": "2.1.1",
     "mocha": "1.21.4",
-    "chai": "1.9.1"
+    "chai": "1.9.1",
+    "http-server": "0.7.2"
   },
   "repository": "git@github.com:mutualmobile/lavaca.git",
   "keywords": [

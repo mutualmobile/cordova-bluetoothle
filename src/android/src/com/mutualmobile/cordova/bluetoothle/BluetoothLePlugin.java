@@ -26,6 +26,8 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.graphics.Color;
+import android.os.Handler;
 import android.util.Base64;
 import android.util.Log;
 
@@ -77,6 +79,9 @@ public class BluetoothLePlugin extends CordovaPlugin {
       }
       else if ("disconnect".equals(action)) {
         disconnect(args.getString(0), callback);
+      }
+      else if ("_close".equals(action)) {
+        close(args.getString(0), callback);
       }
       else if ("getService".equals(action)) {
         String address = args.getString(0);
@@ -247,12 +252,27 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
 
   private void disconnect(String address, CallbackContext callback) throws Exception {
-    disconnectCallback = callback;
+    BluetoothManager bluetoothManager = getBluetoothManager();
     BluetoothGatt gatt = connectedGattServers.get(address);
+
     if (gatt == null) {
       throw new Exception("Already disconnected from " + address);
     }
+
+    if (bluetoothManager.getConnectionState(gatt.getDevice(), BluetoothProfile.GATT_SERVER) != BluetoothProfile.STATE_CONNECTED) {
+      throw new Exception("Already disconnected from " + address);
+    }
+
+    disconnectCallback = callback;
     gatt.disconnect();
+  }
+
+
+  private void close(String address, CallbackContext callback) throws Exception {
+    BluetoothGatt gatt = connectedGattServers.get(address);
+    connectedGattServers.remove(gatt.getDevice().getAddress());
+    gatt.close();
+    callback.success();
   }
 
 
@@ -523,18 +543,17 @@ public class BluetoothLePlugin extends CordovaPlugin {
       else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
         if (disconnectCallback == null) {
           // the user didn't ask for a disconnect, meaning we were dropped
-          connectedGattServers.remove(gatt.getDevice().getAddress());
-          gatt.close();
+          //connectedGattServers.remove(gatt.getDevice().getAddress());
+          //readWriteCallbacks.clear();
 
+          Log.v("bluetoothle", onDeviceDroppedCallback.getCallbackId());
           JSONObject obj = JSONObjects.asDevice(gatt, getBluetoothManager());
-          PluginResult pluginResult = new PluginResult(PluginResult.Status.ERROR, obj);
+          PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, obj);
           pluginResult.setKeepCallback(true);
           onDeviceDroppedCallback.sendPluginResult(pluginResult);
           return;
         }
 
-        connectedGattServers.remove(gatt.getDevice().getAddress());
-        gatt.close();
         disconnectCallback.success(JSONObjects.asDevice(gatt, getBluetoothManager()));
         disconnectCallback = null;
       }

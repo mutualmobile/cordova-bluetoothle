@@ -1,14 +1,15 @@
 describe('bluetoothle', function() {
 
-  this.timeout(5000);
+  this.timeout(10000);
   this.bail(true);
 
 
-  before(function() {
+  before(function(done) {
     var device = sessionStorage.getItem('device');
     if (device) {
-      return bluetoothle.disconnect(device).then(bluetoothle.stopDiscovery, bluetoothle.stopDiscovery);
+      bluetoothle.disconnect(device).then(bluetoothle.stopDiscovery, bluetoothle.stopDiscovery).then(function() { done(); }, function() { done(); });
     }
+    setTimeout(done, 5000);
   });
 
 
@@ -208,6 +209,26 @@ describe('bluetoothle', function() {
 
   it('stopCharacteristicNotifications', function() {
     return bluetoothle.stopCharacteristicNotifications(blueSimDevice.address, '180d', '2a37');
+  });
+
+
+  it('on deviceDropped', function(done) {
+    this.timeout(60000);
+
+    bluetoothle.on('deviceDropped', function(device) {
+      bluetoothle.off('deviceDropped');
+      console.log('dropped', device);
+      done();
+    });
+
+    var args = [blueSimDevice.address, 'fff0', 'fff3', ''];
+    cordova.exec(function() {}, function() {}, 'BluetoothLePlugin', 'writeCharacteristicValue', args);
+  });
+
+
+  it('connect', function() {
+    sessionStorage.setItem('device', blueSimDevice.address);
+    return bluetoothle.connect(blueSimDevice.address);
   });
 
 

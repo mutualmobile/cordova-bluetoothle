@@ -299,28 +299,10 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
     }
   };
 
-  bluetoothle.callbacks = {};
-
-  cordova.exec(function(device) {
-    bluetoothle.trigger('deviceAdded', [device]);
-    bluetoothle.trigger('deviceAdded_internal', [device]);
-  }, function() {
-    console.error('onDeviceAdded error', arguments);
-  }, PLUGIN_NAME, 'onDeviceAdded', []);
-
-  cordova.exec(function(device) {
+  var onDeviceDropped = function(device) {
+    clearQueue(device.address);
     bluetoothle.trigger('deviceDropped', [device]);
-  }, function() {
-    console.error('onDeviceDropped error', arguments);
-  }, PLUGIN_NAME, 'onDeviceDropped', []);
-
-  cordova.exec(function(characteristic) {
-    characteristic = Characteristic.fromNative(characteristic);
-    bluetoothle.trigger('characteristicValueChanged', [characteristic]);
-  }, function() {
-    console.error('onCharacteristicValueChanged error', arguments);
-  }, PLUGIN_NAME, 'onCharacteristicValueChanged', []);
-
+  };
 
   var Service = function() {};
   Service.fromNative = function(obj) {
@@ -374,6 +356,7 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
     // somewhat often unless I let connect() and disconnect() "settle" after
     // the call.
     bluetoothle.connect = function(address) {
+      clearQueue(address);
       var delay = 100;
 
       return new Promise(function(resolve, reject) {
@@ -387,15 +370,30 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
 
     bluetoothle.disconnect = function(address) {
       clearQueue(address);
-      var delay = 100;
 
       return new Promise(function(resolve, reject) {
         exec('disconnect', [address]).then(function(device) {
           setTimeout(function() {
-            resolve(device);
-          }, delay);
+            exec('_close', [address]).then(function() {
+              setTimeout(function() {
+                resolve(device);
+              }, 500);
+            }, reject);
+          }, 500);
         }, reject);
       });
+    };
+
+    onDeviceDropped = function(device) {
+      clearQueue(device.address);
+
+      setTimeout(function() {
+        exec('_close', [device.address]).then(function(device) {
+          setTimeout(function() {
+            bluetoothle.trigger('deviceDropped', [device]);
+          }, 500);
+        });
+      }, 500);
     };
   }
 
@@ -505,6 +503,29 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
     }
     return uuid;
   };
+
+
+  bluetoothle.callbacks = {};
+
+  cordova.exec(function(device) {
+    bluetoothle.trigger('deviceAdded', [device]);
+    bluetoothle.trigger('deviceAdded_internal', [device]);
+  }, function() {
+    console.error('onDeviceAdded error', arguments);
+  }, PLUGIN_NAME, 'onDeviceAdded', []);
+
+  cordova.exec(onDeviceDropped, function() {
+    console.error('onDeviceDropped error', arguments);
+  }, PLUGIN_NAME, 'onDeviceDropped', []);
+
+  cordova.exec(function(characteristic) {
+    characteristic = Characteristic.fromNative(characteristic);
+    bluetoothle.trigger('characteristicValueChanged', [characteristic]);
+  }, function() {
+    console.error('onCharacteristicValueChanged error', arguments);
+  }, PLUGIN_NAME, 'onCharacteristicValueChanged', []);
+
+
 
 
   module.exports = bluetoothle;
