@@ -219,25 +219,6 @@ describe('bluetoothle', function() {
   });
 
 
-  it('on deviceDropped', function(done) {
-    this.timeout(60000);
-
-    bluetoothle.on('deviceDropped', function(device) {
-      bluetoothle.off('deviceDropped');
-      console.log('dropped', device);
-      done();
-    });
-
-    var args = [blueSimDevice.address, 'fff0', 'fff3', ''];
-    cordova.exec(function() {}, function() {}, 'BluetoothLePlugin', 'writeCharacteristicValue', args);
-  });
-
-
-  it('connect', function() {
-    sessionStorage.setItem('device', blueSimDevice.address);
-    return bluetoothle.connect(blueSimDevice.address);
-  });
-
 
   it('disconnect', function() {
     return bluetoothle.disconnect(blueSimDevice.address);

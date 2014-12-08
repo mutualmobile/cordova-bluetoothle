@@ -174,7 +174,9 @@ NSString * const AdapterStateDiscovering = @"discovering";
 
 @property (nonatomic, copy) NSString *onDeviceAddedCallback;
 @property (nonatomic, copy) NSString *onCharacteristicValueChangedCallback;
+@property (nonatomic, copy) NSString *onDeviceDroppedCallback;
 @property (nonatomic, copy) NSString *readCharacteristicValueCallback;
+@property (nonatomic, strong) NSMutableSet *connectedPeripherals;
 
 @end
 
@@ -184,6 +186,7 @@ NSString * const AdapterStateDiscovering = @"discovering";
 
 - (void)pluginInitialize {
     [self initialize:nil];
+    self.connectedPeripherals = [NSMutableSet set];
 }
 
 - (void)initialize:(CDVInvokedUrlCommand *)command
@@ -310,6 +313,7 @@ NSString * const AdapterStateDiscovering = @"discovering";
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         return;
     }
+    
     
     NSArray* peripherals = [centralManager retrievePeripheralsWithIdentifiers:@[address]];
     
@@ -1065,6 +1069,7 @@ NSString * const AdapterStateDiscovering = @"discovering";
     [pluginResult setKeepCallbackAsBool:false];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:connectCallback];
 //    [activePeripheral discoverServices:@[]];
+    [self.connectedPeripherals addObject:peripheral];
 }
 
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error
@@ -1086,22 +1091,41 @@ NSString * const AdapterStateDiscovering = @"discovering";
 {
     [self clearOperationCallbacks];
     
-    if (connectCallback == nil)
-    {
+    if (connectCallback != nil) {
+        NSObject* name = [self formatName:peripheral.name];
+        
+        NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeSuccess, keyCode, statusDisconnected, keyStatus, name, keyName, [peripheral.identifier UUIDString], keyAddress, nil];
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:returnObj];
+        [pluginResult setKeepCallbackAsBool:false];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:connectCallback];
+        
+        connectCallback = nil;
+    }
+    
+    [self peripheralDidLoseConnection:peripheral];
+    
+}
+
+//Peripheral Delegates
+
+// fake delegate method we've made up to manage losing connection by accident
+- (void)peripheralDidLoseConnection:(CBPeripheral *)peripheral {
+    if ( self.onDeviceDroppedCallback == nil ) {
         return;
     }
     
     NSObject* name = [self formatName:peripheral.name];
     
-    NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeSuccess, keyCode, statusDisconnected, keyStatus, name, keyName, [peripheral.identifier UUIDString], keyAddress, nil];
+    NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeErrorIsDisconnected, keyCode, statusDisconnected, keyStatus, name, keyName, [peripheral.identifier UUIDString], keyAddress, nil];
     CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:returnObj];
-    [pluginResult setKeepCallbackAsBool:false];
-    [self.commandDelegate sendPluginResult:pluginResult callbackId:connectCallback];
+    //Keep in case device gets disconnected without user initiation
+    [pluginResult setKeepCallbackAsBool:true];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:self.onDeviceDroppedCallback];
+    [self.connectedPeripherals removeObject:peripheral];
     
-    connectCallback = nil;
+    
 }
 
-//Peripheral Delegates
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error
 {
     if (discoverCallback == nil)
@@ -1939,7 +1963,7 @@ NSString * const AdapterStateDiscovering = @"discovering";
 }
 
 - (void)onDeviceDropped:(CDVInvokedUrlCommand *)command {
-    
+    self.onDeviceDroppedCallback = command.callbackId;
 }
 
 - (void)onCharacteristicValueChanged:(CDVInvokedUrlCommand *)command {
