@@ -35,7 +35,6 @@ var command = new bleno.PrimaryService({
         callback(this.RESULT_SUCCESS, this.value);
       },
       onWriteRequest: function(data, offset, withoutResponse, callback) {
-        console.log('tet2');
         this.value = data;
         callback(this.RESULT_SUCCESS);
       }
@@ -47,7 +46,6 @@ var command = new bleno.PrimaryService({
         callback(this.RESULT_SUCCESS, this.value);
       },
       onWriteRequest: function(data, offset, withoutResponse, callback) {
-        console.log('tet');
         this.value = data;
         callback(this.RESULT_SUCCESS);
       }
@@ -59,7 +57,6 @@ var command = new bleno.PrimaryService({
         callback(this.RESULT_SUCCESS, this.value);
       },
       onWriteRequest: function(data, offset, withoutResponse, callback) {
-        console.log('TEST');
         this.value = data;
         var self = this;
         callback(self.RESULT_SUCCESS);
