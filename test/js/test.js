@@ -30,42 +30,49 @@ describe('bluetoothle', function() {
 
   var blueSimDevice = '';
 
-  it('startDiscovery', function() {
+  it('startDiscovery', function(done) {
     console.log("startDiscovery started");
+    // for multiple developers: avoid trampling on each others' BT adapters by
+    // only connecting to the closest BlePluginSim
+    var devices = [];
     bluetoothle.on('deviceAdded', function(device) {
       if (device.name === 'BlePluginSim') {
-        blueSimDevice = device;
+        devices.push(device);
         console.log('BLUESIM', device);
-        bluetoothle.off('deviceAdded');
       }
     });
 
-    return bluetoothle.startDiscovery().then(function(state) {
+    setTimeout(function() {
+      var closest = devices[0];
+      devices.forEach(function(d) {
+        if (d.rssi > closest.rssi) {
+          closest = d;
+        }
+      });
+      console.log('BLUESIM closest', closest);
+      blueSimDevice = closest;
+      bluetoothle.off('deviceAdded');
+      done();
+    }, 3000);
+
+    bluetoothle.startDiscovery().then(function(state) {
       console.log("startDiscovery state: "+state);
       console.log(state);
     });
   });
 
 
-  it('onDeviceAdded', function(done) {
-    var interval = setInterval(function() {
-      if (blueSimDevice) {
-        clearInterval(interval);
-
-        chai.assert.property(blueSimDevice, 'address');
-        chai.assert.property(blueSimDevice, 'name');
-        chai.assert.property(blueSimDevice, 'rssi');
-        //chai.assert.property(blueSimDevice, 'connected');
-        chai.assert.property(blueSimDevice, 'uuids');
-        chai.assert.isString(blueSimDevice.address);
-        chai.assert.isString(blueSimDevice.name);
-        chai.assert.isNumber(blueSimDevice.rssi);
-        //chai.assert.isBoolean(blueSimDevice.connected);
-        chai.assert.isArray(blueSimDevice.uuids);
-
-        done();
-      }
-    }, 50);
+  it('onDeviceAdded', function() {
+    chai.assert.property(blueSimDevice, 'address');
+    chai.assert.property(blueSimDevice, 'name');
+    chai.assert.property(blueSimDevice, 'rssi');
+    //chai.assert.property(blueSimDevice, 'connected');
+    chai.assert.property(blueSimDevice, 'uuids');
+    chai.assert.isString(blueSimDevice.address);
+    chai.assert.isString(blueSimDevice.name);
+    chai.assert.isNumber(blueSimDevice.rssi);
+    //chai.assert.isBoolean(blueSimDevice.connected);
+    chai.assert.isArray(blueSimDevice.uuids);
   });
 
 
