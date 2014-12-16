@@ -87,6 +87,13 @@ describe('bluetoothle', function() {
   });
 
 
+  it('isConnected', function() {
+    return bluetoothle.isConnected(blueSimDevice.address).then(function(result) {
+      chai.assert(result === true, 'isConnected() should return true');
+    });
+  });
+
+
   var services;
   var assertIsService = function(service) {
     chai.assert.property(service, 'uuid');
@@ -222,6 +229,13 @@ describe('bluetoothle', function() {
 
   it('disconnect', function() {
     return bluetoothle.disconnect(blueSimDevice.address);
+  });
+
+
+  it('isConnected', function() {
+    return bluetoothle.isConnected(blueSimDevice.address).then(function(result) {
+      chai.assert(result === false, 'isConnected() should return false');
+    });
   });
 
 

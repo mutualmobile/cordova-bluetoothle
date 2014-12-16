@@ -127,6 +127,25 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
       clearQueue(address);
       return exec('disconnect', args);
     },
+    isConnected: function(address) {
+      var args;
+      if (isIos) {
+        args = [{
+          address: address
+        }];
+      }
+      else {
+        args = [address];
+      }
+      return exec('isConnected', args).then(function(result) {
+        if (isIos) {
+          return result.isConnected;
+        }
+        else {
+          return result;
+        }
+      });
+    },
     getService: function(address, serviceId) {
       var args;
       if (isIos) {
