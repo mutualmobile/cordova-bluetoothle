@@ -138,12 +138,7 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
         args = [address];
       }
       return exec('isConnected', args).then(function(result) {
-        if (isIos) {
-          return result.isConnected;
-        }
-        else {
-          return result;
-        }
+        return result.isConnected;
       });
     },
     getService: function(address, serviceId) {
@@ -396,23 +391,22 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
             exec('_close', [address]).then(function() {
               setTimeout(function() {
                 resolve(device);
-              }, 500);
+              }, 1000);
             }, reject);
-          }, 500);
+          }, 1000);
         }, reject);
       });
     };
 
     onDeviceDropped = function(device) {
-      clearQueue(device.address);
-
       setTimeout(function() {
-        exec('_close', [device.address]).then(function(device) {
+        exec('_close', [device.address]).then(function() {
           setTimeout(function() {
+            clearQueue(device.address);
             bluetoothle.trigger('deviceDropped', [device]);
-          }, 500);
+          }, 1000);
         });
-      }, 500);
+      }, 1000);
     };
   }
 

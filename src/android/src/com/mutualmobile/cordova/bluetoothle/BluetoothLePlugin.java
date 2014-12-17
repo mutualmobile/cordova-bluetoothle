@@ -2,6 +2,7 @@ package com.mutualmobile.cordova.bluetoothle;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -26,8 +27,6 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
-import android.graphics.Color;
-import android.os.Handler;
 import android.util.Base64;
 import android.util.Log;
 
@@ -79,6 +78,11 @@ public class BluetoothLePlugin extends CordovaPlugin {
       }
       else if ("disconnect".equals(action)) {
         disconnect(args.getString(0), callback);
+      }
+      else if ("isConnected".equals(action)) {
+        JSONObject result = new JSONObject();
+        result.put("isConnected", isConnected(args.getString(0)));
+        callback.success(result);
       }
       else if ("_close".equals(action)) {
         close(args.getString(0), callback);
@@ -211,11 +215,6 @@ public class BluetoothLePlugin extends CordovaPlugin {
       scanCallback = new BluetoothAdapter.LeScanCallback() {
         @Override
         public void onLeScan(final BluetoothDevice device, int rssi, byte[] ad) {
-          /*
-           *if (foundDevices.contains(device)) {
-           *  return;
-           *}
-           */
           foundDevices.add(device);
 
           JSONObject obj = JSONObjects.asDevice(device, rssi, ad);
@@ -244,7 +243,23 @@ public class BluetoothLePlugin extends CordovaPlugin {
   }
 
 
+  private boolean isConnected(String address) {
+    BluetoothManager bluetoothManager = getBluetoothManager();
+    List<BluetoothDevice> devices = bluetoothManager.getConnectedDevices(BluetoothProfile.GATT_SERVER);
+    for (BluetoothDevice device : devices) {
+      if (device.getAddress().equals(address)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+
   private void connect(String address, CallbackContext callback) throws Exception {
+    if (isConnected(address)) {
+      callback.success();
+      return;
+    }
     connectCallback = callback;
     BluetoothDevice device = getDevice(address);
     device.connectGatt(cordova.getActivity().getApplicationContext(), false, gattCallback);
@@ -252,18 +267,13 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
 
   private void disconnect(String address, CallbackContext callback) throws Exception {
-    BluetoothManager bluetoothManager = getBluetoothManager();
-    BluetoothGatt gatt = connectedGattServers.get(address);
-
-    if (gatt == null) {
-      throw new Exception("Already disconnected from " + address);
-    }
-
-    if (bluetoothManager.getConnectionState(gatt.getDevice(), BluetoothProfile.GATT_SERVER) != BluetoothProfile.STATE_CONNECTED) {
-      throw new Exception("Already disconnected from " + address);
+    if (!isConnected(address)) {
+      callback.success();
+      return;
     }
 
     disconnectCallback = callback;
+    BluetoothGatt gatt = connectedGattServers.get(address);
     gatt.disconnect();
   }
 
