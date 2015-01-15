@@ -9,6 +9,7 @@
     NSString* discoverCallback;
     NSString* descriptorCallback;
     NSString* rssiCallback;
+    NSString* deviceCallback;
     NSMutableDictionary* operationCallbacks;
     
     CBCentralManager *centralManager;
@@ -17,7 +18,7 @@
 }
 
 - (void)initialize:(CDVInvokedUrlCommand *)command;
-- (void)startScan:(CDVInvokedUrlCommand *)command;
+//- (void)startScan:(CDVInvokedUrlCommand *)command;
 - (void)stopScan:(CDVInvokedUrlCommand *)command;
 - (void)connect:(CDVInvokedUrlCommand *)command;
 - (void)reconnect:(CDVInvokedUrlCommand *)command;
@@ -44,9 +45,10 @@
 - (void)onDeviceDropped:(CDVInvokedUrlCommand *)command;
 - (void)onCharacteristicValueChanged:(CDVInvokedUrlCommand *)command;
 - (void)getAdapterState:(CDVInvokedUrlCommand *)command;
+- (void)getDevice:(CDVInvokedUrlCommand *)command;
 - (void)getService:(CDVInvokedUrlCommand *)command;
 - (void)getCharacteristic:(CDVInvokedUrlCommand *)command;
-- (void)startDiscovery;
+- (void)startDiscovery:(CDVInvokedUrlCommand *)command;
 
 @end
 

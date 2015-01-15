@@ -71,6 +71,7 @@ NSString *const errorIsDisconnected = @"isDisconnected";
 NSString *const errorService = @"service";
 NSString *const errorCharacteristic = @"characteristic";
 NSString *const errorDescriptor = @"descriptor";
+NSString *const errorGetDevice = @"getDevice";
 
 
 
@@ -100,6 +101,7 @@ NSString *const codeErrorIsDisconnected = @"120";
 NSString *const codeErrorService = @"121";
 NSString *const codeErrorCharacteristic = @"122";
 NSString *const codeErrorDescriptor = @"123";
+NSString *const codeErrorGetDevice = @"124";
 //Init Error Codes
 NSString *const codePoweredOff = @"201";
 NSString *const codeUnauthorized = @"202";
@@ -169,6 +171,13 @@ NSString * const AdapterStateAddress = @"address";
 NSString * const AdapterStateName = @"name";
 NSString * const AdapterStateEnabled = @"enabled";
 NSString * const AdapterStateDiscovering = @"discovering";
+
+// Device object
+NSString * const DeviceAddress = @"address";
+NSString * const DeviceName = @"name";
+NSString * const DeviceRSSI = @"rssi";
+NSString * const DeviceConnected = @"connected";
+NSString * const DeviceUUIDS = @"uuids";
 
 @interface BluetoothLePlugin ()
 
@@ -354,7 +363,7 @@ NSString * const AdapterStateDiscovering = @"discovering";
     
     connectCallback = command.callbackId;
     
-    NSObject* name = [self formatName:activePeripheral.name];
+    //NSObject* name = [self formatName:activePeripheral.name];
     
 //    NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeSuccess, keyCode, statusConnecting, keyStatus, name, keyName, [activePeripheral.identifier UUIDString], keyAddress, nil];
 //    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:returnObj];
@@ -1044,6 +1053,9 @@ NSString * const AdapterStateDiscovering = @"discovering";
     device.rssi = [RSSI integerValue];
     device.connected = (peripheral.state == CBPeripheralStateConnected);
     device.uuids = [advertisementData[CBAdvertisementDataServiceUUIDsKey] valueForKey:@"UUIDString"];
+    if (device.uuids == nil) {
+        device.uuids = [[NSMutableArray alloc] init];
+    }
     NSDictionary *returnObj = [device dictionaryRepresentation];
     
     CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:returnObj];
@@ -1101,6 +1113,9 @@ NSString * const AdapterStateDiscovering = @"discovering";
         
         connectCallback = nil;
     }
+    
+    scanCallback = nil;
+    activePeripheral = nil;
     
     [self peripheralDidLoseConnection:peripheral];
     
@@ -1469,31 +1484,76 @@ NSString * const AdapterStateDiscovering = @"discovering";
         [self removeCallback:characteristic.UUID forOperationType:operationUnsubscribe];
     }
 }
-
-- (void)peripheralDidUpdateRSSI:(CBPeripheral *)peripheral error:(NSError *)error
+- (void)peripheral:(CBPeripheral *)peripheral didReadRSSI:(NSNumber *)RSSI error:(NSError *)error
 {
-    if (rssiCallback == nil)
+    if (rssiCallback == nil && deviceCallback == nil)
     {
         return;
     }
     
-    if (error != nil)
-    {
-        NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeErrorRssi, keyCode, errorRssi, keyError, error.description, keyMessage, nil];
-        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:returnObj];
+    //Extending this callback to work for RSSI and getDevice
+    if (rssiCallback != nil) {
+        
+        if (error != nil)
+        {
+            NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeErrorRssi, keyCode, errorRssi, keyError, error.description, keyMessage, nil];
+            CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:returnObj];
+            [pluginResult setKeepCallbackAsBool:false];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:rssiCallback];
+            rssiCallback = nil;
+            return;
+        }
+        
+        NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeSuccess, keyCode, RSSI, keyRssi, statusRssi, keyStatus, nil];
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:returnObj];
         [pluginResult setKeepCallbackAsBool:false];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:rssiCallback];
+        
         rssiCallback = nil;
-        return;
+        
+        
+    } else if (deviceCallback != nil) {
+        if (error != nil)
+        {
+            NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeErrorGetDevice, keyCode, errorGetDevice, keyError, error.description, keyMessage, nil];
+            CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:returnObj];
+            [pluginResult setKeepCallbackAsBool:false];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:deviceCallback];
+            deviceCallback = nil;
+            return;
+        }
+        
+        Device *device = [Device new];
+        device.address = peripheral.identifier.UUIDString;
+        device.name = peripheral.name;
+        device.rssi = [RSSI integerValue];
+        device.connected = (peripheral.state == CBPeripheralStateConnected);
+
+        NSMutableArray* services = [[NSMutableArray alloc] init];
+        
+        for (CBService* service in peripheral.services)
+        {
+            Service *newService = [Service new];
+            newService.uuid = service.UUID.UUIDString;
+            newService.isPrimary = service.isPrimary;
+            newService.instanceId = service.UUID.UUIDString;
+            newService.deviceAddress = service.peripheral.identifier.UUIDString;
+            NSDictionary *dictionaryRepresentation = [newService dictionaryRepresentation];
+            [services addObject:dictionaryRepresentation];
+        }
+        
+        device.uuids = services;
+        NSDictionary *returnObj = [device dictionaryRepresentation];
+        
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:returnObj];
+        [pluginResult setKeepCallbackAsBool:false];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:deviceCallback];
+        
+        deviceCallback = nil;
     }
-    
-    NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeSuccess, keyCode, peripheral.RSSI, keyRssi, statusRssi, keyStatus, nil];
-    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:returnObj];
-    [pluginResult setKeepCallbackAsBool:false];
-    [self.commandDelegate sendPluginResult:pluginResult callbackId:rssiCallback];
-    
-    rssiCallback = nil;
+
 }
+
 
 //Helpers for Callbacks
 - (NSMutableDictionary*) ensureCallback: (CBUUID *) characteristicUuid
@@ -1978,6 +2038,18 @@ NSString * const AdapterStateDiscovering = @"discovering";
                                     AdapterStateDiscovering : @(YES) };
     CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:adapterState];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+- (void)getDevice:(CDVInvokedUrlCommand *)command {
+    NSDictionary *arguments = [command.arguments firstObject];
+    NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:arguments[keyAddress]];
+    NSArray *peripherals = [centralManager retrievePeripheralsWithIdentifiers:@[uuid]];
+    
+    if ([peripherals count]) {
+        CBPeripheral *peripheral = peripherals[0];
+        [peripheral readRSSI];
+        deviceCallback = command.callbackId;
+    }
 }
 
 - (void)getService:(CDVInvokedUrlCommand *)command {

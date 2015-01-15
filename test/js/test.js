@@ -1,6 +1,6 @@
 describe('bluetoothle', function() {
 
-  this.timeout(10000);
+  this.timeout(20000);
   this.bail(true);
 
 
@@ -127,6 +127,23 @@ describe('bluetoothle', function() {
       result.forEach(function(service) {
         assertIsService(service);
       });
+    });
+  });
+
+
+  it('getDevice', function() {
+    return bluetoothle.getDevice(blueSimDevice.address).then(function(result) {
+      console.log('rssi:'+result.rssi);
+      //chai.assert.property(result, 'address');
+      chai.assert.property(result, 'name');
+      chai.assert.property(result, 'rssi');
+      chai.assert.property(result, 'connected');
+      chai.assert.property(result, 'uuids');
+      //chai.assert.isString(result.address);
+      chai.assert.isString(result.name);
+      chai.assert.isNumber(result.rssi);
+      chai.assert.isBoolean(result.connected);
+      chai.assert.isArray(result.uuids);
     });
   });
 
