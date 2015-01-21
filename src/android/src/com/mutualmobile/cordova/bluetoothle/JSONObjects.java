@@ -58,6 +58,20 @@ public class JSONObjects {
     }
     return result;
   }
+  
+  public static JSONObject asDevice(BluetoothDevice device, int rssi, JSONArray uuids) {
+	    JSONObject result = new JSONObject();
+	    try {
+	      result.put("address", device.getAddress());
+	      result.put("name", device.getName());
+	      result.put("rssi", rssi);
+	      result.put("uuids", uuids);
+	    }
+	    catch (JSONException e) {
+	      Log.e("bluetoothle", "JSON Error occurred... so we can't give cordova a response in JSON.", e);
+	    }
+	    return result;
+	  }
 
 
   public static JSONObject asDevice(BluetoothGatt gatt, BluetoothManager manager) {

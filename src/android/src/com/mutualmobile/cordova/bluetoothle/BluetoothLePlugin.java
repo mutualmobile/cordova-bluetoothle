@@ -38,6 +38,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
   private CallbackContext onDeviceDroppedCallback;
   private CallbackContext onCharacteristicValueChangedCallback;
   private CallbackContext rssiCallback;
+  private CallbackContext deviceInfoCallback;
   private Map<CallbackKey, CallbackContext> readWriteCallbacks;
   private Map<String, BluetoothGatt> connectedGattServers;
 
@@ -95,6 +96,10 @@ public class BluetoothLePlugin extends CordovaPlugin {
       else if ("getServices".equals(action)) {
         String address = args.getString(0);
         getServices(address, callback);
+      }
+      else if ("getDevice".equals(action)) {
+        String address = args.getString(0);
+        getDeviceInfo(address, callback);
       }
       else if ("getCharacteristic".equals(action)) {
         String address = args.getString(0);
@@ -199,6 +204,15 @@ public class BluetoothLePlugin extends CordovaPlugin {
     return device;
   }
 
+  private void getDeviceInfo(String address, CallbackContext callback) throws Exception {
+	BluetoothGatt gatt = connectedGattServers.get(address);
+    deviceInfoCallback = callback;
+    boolean result = gatt.readRemoteRssi();
+
+    if (!result) {
+      throw new Exception("Could not initiate BluetoothGatt#readRemoteRssi. Android didn't tell us why either.");
+    }
+  }
 
   private void getAdapterState(CallbackContext callback) {
     BluetoothManager bluetoothManager = (BluetoothManager) cordova.getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
@@ -689,12 +703,31 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
     @Override
     public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-      if (status == BluetoothGatt.GATT_SUCCESS) {
-        rssiCallback.success(rssi);
+      
+      if (rssiCallback != null) {
+    	  if (status == BluetoothGatt.GATT_SUCCESS) {
+    	    rssiCallback.success(rssi);
+    	  } else {
+    	    rssiCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
+    	  }
+    	  rssiCallback = null;
+      } else if (deviceInfoCallback != null) {
+    	  if (status == BluetoothGatt.GATT_SUCCESS) {
+    		JSONArray result = new JSONArray();
+    		JSONArray services = new JSONArray();
+    	    for (BluetoothGattService s : gatt.getServices()) {
+    	      services.put(JSONObjects.asService(s, gatt.getDevice()));
+    	    }
+    	    result.put(JSONObjects.asDevice(gatt.getDevice(), rssi, services));
+    		deviceInfoCallback.success(result);
+    	  } else {
+    	    deviceInfoCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
+    	  }
+    	  deviceInfoCallback = null;
+      } else {
+    	  return;
       }
-      else {
-        rssiCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
-      }
+    	
     }
 
   };
