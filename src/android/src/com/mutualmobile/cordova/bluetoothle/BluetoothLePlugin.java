@@ -713,13 +713,11 @@ public class BluetoothLePlugin extends CordovaPlugin {
     	  rssiCallback = null;
       } else if (deviceInfoCallback != null) {
     	  if (status == BluetoothGatt.GATT_SUCCESS) {
-    		JSONArray result = new JSONArray();
     		JSONArray services = new JSONArray();
     	    for (BluetoothGattService s : gatt.getServices()) {
     	      services.put(JSONObjects.asService(s, gatt.getDevice()));
     	    }
-    	    result.put(JSONObjects.asDevice(gatt.getDevice(), rssi, services));
-    		deviceInfoCallback.success(result);
+    	    deviceInfoCallback.success(JSONObjects.asDevice(gatt.getDevice(), rssi, services));
     	  } else {
     	    deviceInfoCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
     	  }
