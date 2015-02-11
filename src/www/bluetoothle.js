@@ -36,10 +36,10 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
           currentItem.callback.apply(this, arguments);
           processTasks();
         },
-        function failure() {
+        function failure(err) {
           clearTimeout(cancelTimeout);
           taskIsRunning = false;
-          currentItem.errback.apply(this, arguments);
+          currentItem.errback(new Error(JSON.stringify(err)));
           processTasks();
         }
       );
@@ -50,7 +50,9 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
   var exec = function(name, args) {
     args = args || [];
     return new Promise(function(resolve, reject) {
-      cordova.exec(resolve, reject, PLUGIN_NAME, name, args);
+      cordova.exec(resolve, function(err) {
+        reject(new Error(JSON.stringify(err)));
+      }, PLUGIN_NAME, name, args);
     });
   };
 
