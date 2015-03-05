@@ -153,7 +153,9 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
       else {
         args = [address];
       }
-      return exec('getDevice', args);
+      return exec('getDevice', args).then(function(result) {
+        return Device.fromNative(result);
+      });
     },
     getService: function(address, serviceId) {
       var args;
@@ -328,6 +330,7 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
   };
 
   var onDeviceDropped = function(device) {
+    device = Device.fromNative(device);
     clearQueue(device.address);
     bluetoothle.trigger('deviceDropped', [device]);
   };
@@ -371,6 +374,27 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
       c.value = base64.toArrayBuffer(obj.value);
     }
     return c;
+  };
+
+
+  var Device = function() {};
+  Device.fromNative = function(obj) {
+    var d = new Device();
+    var key;
+    for (key in obj) {
+      d[key] = obj[key];
+    }
+    if (d.serviceData) {
+      for (key in d.serviceData) {
+        d.serviceData[key] = base64.toArrayBuffer(d.serviceData[key]);
+      }
+    }
+    if (d.manufacturerData) {
+      for (key in d.manufacturerData) {
+        d.manufacturerData[key] = base64.toArrayBuffer(d.manufacturerData[key]);
+      }
+    }
+    return d;
   };
 
 
@@ -535,6 +559,7 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
   bluetoothle.callbacks = {};
 
   cordova.exec(function(device) {
+    device = Device.fromNative(device);
     bluetoothle.trigger('deviceAdded', [device]);
     bluetoothle.trigger('deviceAdded_internal', [device]);
   }, function() {
