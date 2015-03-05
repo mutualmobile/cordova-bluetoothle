@@ -703,29 +703,26 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
     @Override
     public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-      
+      BluetoothManager bluetoothManager = (BluetoothManager) cordova.getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
+
       if (rssiCallback != null) {
-    	  if (status == BluetoothGatt.GATT_SUCCESS) {
-    	    rssiCallback.success(rssi);
-    	  } else {
-    	    rssiCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
-    	  }
-    	  rssiCallback = null;
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+          rssiCallback.success(rssi);
+        } else {
+          rssiCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
+        }
+        rssiCallback = null;
       } else if (deviceInfoCallback != null) {
-    	  if (status == BluetoothGatt.GATT_SUCCESS) {
-    		JSONArray services = new JSONArray();
-    	    for (BluetoothGattService s : gatt.getServices()) {
-    	      services.put(JSONObjects.asService(s, gatt.getDevice()));
-    	    }
-    	    deviceInfoCallback.success(JSONObjects.asDevice(gatt.getDevice(), rssi, services));
-    	  } else {
-    	    deviceInfoCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
-    	  }
-    	  deviceInfoCallback = null;
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+          deviceInfoCallback.success(JSONObjects.asDevice(gatt, bluetoothManager, rssi));
+        } else {
+          deviceInfoCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
+        }
+        deviceInfoCallback = null;
       } else {
-    	  return;
+        return;
       }
-    	
+
     }
 
   };
