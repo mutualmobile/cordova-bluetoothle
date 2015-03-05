@@ -292,11 +292,13 @@ NSString * const DeviceUUIDS = @"uuids";
     //Ensure Bluetooth is enabled
     if ([self isNotInitialized:command])
     {
+        //NSLog(@"not initialized");
         return;
     }
     
     if (activePeripheral != nil)
     {
+        //NSLog(@"still active");
         [self reconnect:command];
 //        NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codePreviouslyConnected, keyCode, errorConnect, keyError, logPreviouslyConnected, keyMessage, nil];
 //        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:returnObj];
@@ -309,6 +311,7 @@ NSString * const DeviceUUIDS = @"uuids";
     
     if ([self isNotArgsObject:obj :command])
     {
+        //NSLog(@"no args");
         return;
     }
     
@@ -316,6 +319,7 @@ NSString * const DeviceUUIDS = @"uuids";
     
     if (address == nil)
     {
+        //NSLog(@"no address");
         NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeNoAddress, keyCode, errorConnect, keyError, logNoAddress, keyMessage, nil];
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:returnObj];
         [pluginResult setKeepCallbackAsBool:false];
@@ -328,6 +332,7 @@ NSString * const DeviceUUIDS = @"uuids";
     
     if (peripherals.count == 0)
     {
+        //NSLog(@"not found");
         NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeNoDevice, keyCode, errorConnect, keyError, logNoDevice, keyMessage, nil];
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:returnObj];
         [pluginResult setKeepCallbackAsBool:false];
@@ -336,6 +341,22 @@ NSString * const DeviceUUIDS = @"uuids";
     }
     
     activePeripheral = peripherals[0];
+    
+    if ([self isNotInitialized:command])
+    {
+        //NSLog(@"checking - not initialized");
+    }
+    
+    if ([self wasNeverConnected:command])
+    {
+        //NSLog(@"checking - not ever connected");
+    }
+    
+    if ([self isNotDisconnected:command])
+    {
+        //NSLog(@"checking - not disconnected");
+    }
+    
     [activePeripheral setDelegate:self];
     
     connectCallback = command.callbackId;
@@ -348,16 +369,19 @@ NSString * const DeviceUUIDS = @"uuids";
     //Ensure Bluetooth is enabled
     if ([self isNotInitialized:command])
     {
+        //NSLog(@"not initialized");
         return;
     }
     
     if ([self wasNeverConnected:command])
     {
+        //NSLog(@"not ever connected");
         return;
     }
     
     if ([self isNotDisconnected:command])
     {
+        //NSLog(@"not disconnected");
         return;
     }
     
@@ -1050,12 +1074,23 @@ NSString * const DeviceUUIDS = @"uuids";
     Device *device = [Device new];
     device.address = peripheral.identifier.UUIDString;
     device.name = [self formatName:advertisementData[CBAdvertisementDataLocalNameKey]];
+    NSDictionary *serviceData = [advertisementData valueForKey:CBAdvertisementDataServiceDataKey];
+    device.serviceData = [serviceData representativeJSON];
+    NSData* manufacturerData = [advertisementData valueForKey:CBAdvertisementDataManufacturerDataKey];
+    device.manufacturerData = [manufacturerData manufacturerDataJSON];
+    NSNumber* txPowerLevel = [advertisementData valueForKey:CBAdvertisementDataTxPowerLevelKey];
+    if (txPowerLevel) {
+        device.txPowerLevel = [txPowerLevel integerValue];
+    } else {
+        device.txPowerLevel = 0;
+    }
     device.rssi = [RSSI integerValue];
     device.connected = (peripheral.state == CBPeripheralStateConnected);
     device.uuids = [advertisementData[CBAdvertisementDataServiceUUIDsKey] valueForKey:@"UUIDString"];
     if (device.uuids == nil) {
         device.uuids = [[NSMutableArray alloc] init];
     }
+    
     NSDictionary *returnObj = [device dictionaryRepresentation];
     
     CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:returnObj];

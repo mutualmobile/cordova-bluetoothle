@@ -29,6 +29,9 @@
 
 @property (nonatomic, copy) NSString *address;
 @property (nonatomic, copy) NSString *name;
+@property (nonatomic, copy) NSString *manufacturerData;
+@property (nonatomic, copy) NSString *serviceData;
+@property (nonatomic) NSInteger txPowerLevel;
 @property (nonatomic) NSInteger rssi;
 @property (nonatomic) bool connected;
 @property (nonatomic, copy) NSArray *uuids;
