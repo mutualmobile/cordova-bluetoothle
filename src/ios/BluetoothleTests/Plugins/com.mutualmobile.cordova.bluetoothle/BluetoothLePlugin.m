@@ -1064,16 +1064,19 @@ NSString * const DeviceUUIDS = @"uuids";
 {
 }
 
+
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI
 {
     if (self.onDeviceAddedCallback == nil)
     {
         return;
     }
+
     
     Device *device = [Device new];
     device.address = peripheral.identifier.UUIDString;
-    device.name = [self formatName:advertisementData[CBAdvertisementDataLocalNameKey]];
+    //device.name = [self formatName:advertisementData[CBAdvertisementDataLocalNameKey]];
+    device.name = [self formatName:peripheral.name];
     NSDictionary *serviceData = [advertisementData valueForKey:CBAdvertisementDataServiceDataKey];
     device.serviceData = [serviceData representativeJSON];
     NSData* manufacturerData = [advertisementData valueForKey:CBAdvertisementDataManufacturerDataKey];
