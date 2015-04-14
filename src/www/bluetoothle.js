@@ -1,5 +1,6 @@
 cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(require, exports, module) {
 
+
   var PLUGIN_NAME = 'BluetoothLePlugin';
   var base64 = require('cordova/base64');
 
@@ -385,11 +386,25 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
       d[key] = obj[key];
     }
     if (d.serviceData) {
+      if (typeof d.serviceData === 'string') {
+        try {
+          d.serviceData = JSON.parse(d.serviceData);
+        } catch (e) {
+          
+        }
+      }
       for (key in d.serviceData) {
         d.serviceData[key] = base64.toArrayBuffer(d.serviceData[key]);
       }
     }
     if (d.manufacturerData) {
+      if (typeof d.manufacturerData === 'string') {
+        try {
+          d.manufacturerData = JSON.parse(d.manufacturerData);
+        } catch (e) {
+          
+        }
+      }
       for (key in d.manufacturerData) {
         d.manufacturerData[key] = base64.toArrayBuffer(d.manufacturerData[key]);
       }

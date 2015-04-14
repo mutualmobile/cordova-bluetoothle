@@ -122,9 +122,12 @@ public class JSONObjects {
           case DATA_TYPE_MANUFACTURER_SPECIFIC_DATA:
             // The first two bytes of the manufacturer specific data are
             // manufacturer ids in little endian.
+            int manufacturerIdLength = UUID_BYTES_16_BIT;
+            byte[] manufacturerIdBytes = extractBytes(ad, currentPos, manufacturerIdLength);
+            String manufacturerIdString = new String(manufacturerIdBytes);
             int manufacturerId = ((ad[currentPos + 1] & 0xFF) << 8) + (ad[currentPos] & 0xFF);
             byte[] manufacturerDataBytes = extractBytes(ad, currentPos + 2, dataLength - 2);
-            manufacturerData.put(Integer.toString(manufacturerId), manufacturerDataBytes);
+            manufacturerData.put(manufacturerIdString, manufacturerDataBytes);
             break;
           default:
             // Just ignore, we don't handle such data type.
@@ -138,8 +141,10 @@ public class JSONObjects {
       }
 
       JSONArray uuids = new JSONArray();
-      for (ParcelUuid u : serviceUuids) {
-        uuids.put(u);
+      if (serviceUuids != null) {
+        for (ParcelUuid u : serviceUuids) {
+          uuids.put(u);
+        }
       }
       result.put("uuids", uuids);
 
