@@ -26,7 +26,10 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.util.Base64;
 import android.util.Log;
 
@@ -36,6 +39,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
   private CallbackContext disconnectCallback;
   private CallbackContext onDeviceAddedCallback;
   private CallbackContext onDeviceDroppedCallback;
+  private CallbackContext onAdapterStateChangedCallback;
   private CallbackContext onCharacteristicValueChangedCallback;
   private CallbackContext rssiCallback;
   private CallbackContext deviceInfoCallback;
@@ -51,6 +55,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
     super.initialize(cordova, webView);
     this.connectedGattServers = new HashMap<String, BluetoothGatt>();
     this.readWriteCallbacks = new HashMap<CallbackKey, CallbackContext>();
+    cordova.getActivity().registerReceiver(mReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
   }
 
 
@@ -175,6 +180,9 @@ public class BluetoothLePlugin extends CordovaPlugin {
       }
       else if ("onDeviceDropped".equals(action)) {
         this.onDeviceDroppedCallback = callback;
+      }
+      else if ("onAdapterStateChanged".equals(action)) {
+        this.onAdapterStateChangedCallback = callback;
       }
       else if ("onCharacteristicValueChanged".equals(action)) {
         this.onCharacteristicValueChangedCallback = callback;
@@ -725,6 +733,31 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
     }
 
+  };
+
+
+  private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+      if (onAdapterStateChangedCallback == null) {
+        return;
+      }
+
+      if (intent.getAction().equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+        int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+
+        if (state == BluetoothAdapter.STATE_OFF) {
+          connectedGattServers = new HashMap<String, BluetoothGatt>();
+        }
+
+        if (state == BluetoothAdapter.STATE_OFF || state == BluetoothAdapter.STATE_ON) {
+          JSONObject obj = JSONObjects.asAdapter(getBluetoothManager().getAdapter());
+          PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, obj);
+          pluginResult.setKeepCallback(true);
+          onAdapterStateChangedCallback.sendPluginResult(pluginResult);
+        }
+      }
+    }
   };
 
 

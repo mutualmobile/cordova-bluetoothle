@@ -390,7 +390,7 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
         try {
           d.serviceData = JSON.parse(d.serviceData);
         } catch (e) {
-          
+
         }
       }
       for (key in d.serviceData) {
@@ -402,7 +402,7 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
         try {
           d.manufacturerData = JSON.parse(d.manufacturerData);
         } catch (e) {
-          
+
         }
       }
       for (key in d.manufacturerData) {
@@ -584,6 +584,12 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
   cordova.exec(onDeviceDropped, function() {
     console.error('onDeviceDropped error', arguments);
   }, PLUGIN_NAME, 'onDeviceDropped', []);
+
+  cordova.exec(function(adapter) {
+    bluetoothle.trigger('adapterStateChanged', [adapter]);
+  }, function() {
+    console.error('onAdapterStateChanged error', arguments);
+  }, PLUGIN_NAME, 'onAdapterStateChanged', []);
 
   cordova.exec(function(characteristic) {
     characteristic = Characteristic.fromNative(characteristic);

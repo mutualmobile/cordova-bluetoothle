@@ -57,6 +57,7 @@ energy devices:
     out of range. Boils down to "a device disconnected, but nobody asked for it
     to be"
 * 'onAdapterStateChanged' : AdapterState
+  - called when the Bluetooth adapter turns on or off
 
 
 
