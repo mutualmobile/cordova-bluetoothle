@@ -184,6 +184,7 @@ NSString * const DeviceUUIDS = @"uuids";
 @property (nonatomic, copy) NSString *onDeviceAddedCallback;
 @property (nonatomic, copy) NSString *onCharacteristicValueChangedCallback;
 @property (nonatomic, copy) NSString *onDeviceDroppedCallback;
+@property (nonatomic, copy) NSString *onAdapterStateChangedCallback;
 @property (nonatomic, copy) NSString *readCharacteristicValueCallback;
 @property (nonatomic, strong) NSMutableSet *connectedPeripherals;
 
@@ -983,6 +984,39 @@ NSString * const DeviceUUIDS = @"uuids";
 //Central Manager Delegates
 - (void) centralManagerDidUpdateState:(CBCentralManager *)central
 {
+    if ([centralManager state] == CBCentralManagerStatePoweredOff || [centralManager state] == CBCentralManagerStatePoweredOn) {
+
+        if (self.onAdapterStateChangedCallback != nil)
+        {
+            BOOL isEnabled = ([centralManager state] == CBCentralManagerStatePoweredOn);
+            NSDictionary *adapterState = @{ AdapterStateAddress : @"",
+                                            AdapterStateName : @"",
+                                            AdapterStateEnabled : @(isEnabled),
+                                            AdapterStateDiscovering : @(NO) };
+            CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:adapterState];
+            [pluginResult setKeepCallbackAsBool:true];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:self.onAdapterStateChangedCallback];
+        }
+        
+    }
+    
+    if ([centralManager state] == CBCentralManagerStatePoweredOff) {
+        if ( self.onDeviceDroppedCallback == nil ) {
+            return;
+        }
+        
+        NSObject* name = [self formatName:activePeripheral.name];
+        
+        NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: codeErrorIsDisconnected, keyCode, statusDisconnected, keyStatus, name, keyName, [activePeripheral.identifier UUIDString], keyAddress, nil];
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:returnObj];
+        //Keep in case device gets disconnected without user initiation
+        [pluginResult setKeepCallbackAsBool:true];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:self.onDeviceDroppedCallback];
+        [self.connectedPeripherals removeObject:activePeripheral];
+    }
+    
+    
+    
     //If no callback, don't return anything
     if (initCallback == nil)
     {
@@ -2060,6 +2094,10 @@ NSString * const DeviceUUIDS = @"uuids";
     self.onDeviceAddedCallback = command.callbackId;
 }
 
+- (void)onAdapterStateChanged:(CDVInvokedUrlCommand *)command {
+    self.onAdapterStateChangedCallback = command.callbackId;
+}
+
 - (void)onDeviceDropped:(CDVInvokedUrlCommand *)command {
     self.onDeviceDroppedCallback = command.callbackId;
 }
@@ -2070,10 +2108,10 @@ NSString * const DeviceUUIDS = @"uuids";
 
 - (void)getAdapterState:(CDVInvokedUrlCommand *)command {
     BOOL isEnabled = (centralManager.state == CBCentralManagerStatePoweredOn);
-    NSDictionary *adapterState = @{ AdapterStateAddress : @"1234",
-                                    AdapterStateName : @"andrew",
+    NSDictionary *adapterState = @{ AdapterStateAddress : @"",
+                                    AdapterStateName : @"",
                                     AdapterStateEnabled : @(isEnabled),
-                                    AdapterStateDiscovering : @(YES) };
+                                    AdapterStateDiscovering : @(NO) };
     CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:adapterState];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }

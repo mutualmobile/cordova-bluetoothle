@@ -44,6 +44,7 @@
 - (void)onDeviceAdded:(CDVInvokedUrlCommand *)command;
 - (void)onDeviceDropped:(CDVInvokedUrlCommand *)command;
 - (void)onCharacteristicValueChanged:(CDVInvokedUrlCommand *)command;
+- (void)onAdapterStateChanged:(CDVInvokedUrlCommand *)command;
 - (void)getAdapterState:(CDVInvokedUrlCommand *)command;
 - (void)getDevice:(CDVInvokedUrlCommand *)command;
 - (void)getService:(CDVInvokedUrlCommand *)command;
@@ -150,7 +151,10 @@
     NSMutableDictionary *manufacturerData = [[NSMutableDictionary alloc] init];
     NSData *keyData = [self subdataWithRange:NSMakeRange(0, 2)];
     NSData *objData = [self subdataWithRange:NSMakeRange(2, self.length-2)];
-    NSString *keyString = [[NSString alloc] initWithData:keyData encoding:NSUTF8StringEncoding];
+    NSString *keyString = [[NSString alloc] initWithData:keyData encoding:NSASCIIStringEncoding];
+    if (!keyString) {
+        keyString = [keyData base64EncodedStringWithOptions:0];
+    }
     NSString *objString = [objData base64EncodedStringWithOptions:0];
     [manufacturerData setValue:objString forKey:keyString];
     
