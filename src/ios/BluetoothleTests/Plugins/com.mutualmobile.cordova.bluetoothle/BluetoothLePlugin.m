@@ -1012,7 +1012,9 @@ NSString * const DeviceUUIDS = @"uuids";
         //Keep in case device gets disconnected without user initiation
         [pluginResult setKeepCallbackAsBool:true];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:self.onDeviceDroppedCallback];
-        [self.connectedPeripherals removeObject:activePeripheral];
+				if (activePeripheral) {
+        	[self.connectedPeripherals removeObject:activePeripheral];
+				}
     }
     
     
