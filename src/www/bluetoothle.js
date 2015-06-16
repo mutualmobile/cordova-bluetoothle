@@ -424,13 +424,11 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
     // the call.
     bluetoothle.connect = function(address) {
       clearQueue(address);
-      var delay = 100;
-
       return new Promise(function(resolve, reject) {
         exec('connect', [address]).then(function(device) {
           setTimeout(function() {
             resolve(device);
-          }, delay);
+          }, 100);
         }, reject);
       });
     };
@@ -444,9 +442,9 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
             exec('_close', [address]).then(function() {
               setTimeout(function() {
                 resolve(device);
-              }, 1000);
+              }, 100);
             }, reject);
-          }, 1000);
+          }, 100);
         }, reject);
       });
     };
@@ -457,9 +455,9 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
           setTimeout(function() {
             clearQueue(device.address);
             bluetoothle.trigger('deviceDropped', [device]);
-          }, 1000);
+          }, 100);
         });
-      }, 1000);
+      }, 100);
     };
   }
 

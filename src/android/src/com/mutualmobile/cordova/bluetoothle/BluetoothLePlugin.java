@@ -1,11 +1,8 @@
 package com.mutualmobile.cordova.bluetoothle;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.cordova.CallbackContext;
@@ -68,7 +65,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
 
   @Override
-  public boolean execute(String action, final JSONArray args, final CallbackContext callback) throws JSONException {
+  public boolean execute(final String action, final JSONArray args, final CallbackContext callback) throws JSONException {
     try {
       if ("getAdapterState".equals(action)) {
         getAdapterState(callback);
@@ -176,16 +173,16 @@ public class BluetoothLePlugin extends CordovaPlugin {
         writeDescriptorValue(address, serviceId, characteristicId, descriptorId, value, callback);
       }
       else if ("onDeviceAdded".equals(action)) {
-        this.onDeviceAddedCallback = callback;
+        onDeviceAddedCallback = callback;
       }
       else if ("onDeviceDropped".equals(action)) {
-        this.onDeviceDroppedCallback = callback;
+        onDeviceDroppedCallback = callback;
       }
       else if ("onAdapterStateChanged".equals(action)) {
-        this.onAdapterStateChangedCallback = callback;
+        onAdapterStateChangedCallback = callback;
       }
       else if ("onCharacteristicValueChanged".equals(action)) {
-        this.onCharacteristicValueChangedCallback = callback;
+        onCharacteristicValueChangedCallback = callback;
       }
       else {
         return false;
@@ -194,6 +191,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
     catch(Exception e) {
       callback.error(JSONObjects.asError(e));
     }
+
     return true;
   }
 
@@ -228,25 +226,22 @@ public class BluetoothLePlugin extends CordovaPlugin {
   }
 
 
-  private BluetoothAdapter.LeScanCallback scanCallback;
-
-
-  private void startDiscovery(CallbackContext callback) throws Exception {
-    final Set<BluetoothDevice> foundDevices = new HashSet<BluetoothDevice>();
-    if (scanCallback == null) {
-      scanCallback = new BluetoothAdapter.LeScanCallback() {
-        @Override
-        public void onLeScan(final BluetoothDevice device, int rssi, byte[] ad) {
-          foundDevices.add(device);
-
+  private BluetoothAdapter.LeScanCallback scanCallback = new BluetoothAdapter.LeScanCallback() {
+    @Override
+    public void onLeScan(final BluetoothDevice device, final int rssi, final byte[] ad) {
+      cordova.getActivity().runOnUiThread(new Runnable() {
+        public void run() {
           JSONObject obj = JSONObjects.asDevice(device, rssi, ad);
           PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, obj);
           pluginResult.setKeepCallback(true);
           onDeviceAddedCallback.sendPluginResult(pluginResult);
         }
-      };
+      });
     }
+  };
 
+
+  private void startDiscovery(CallbackContext callback) throws Exception {
     BluetoothManager bluetoothManager = getBluetoothManager();
     boolean result = bluetoothManager.getAdapter().startLeScan(scanCallback);
 
@@ -555,208 +550,228 @@ public class BluetoothLePlugin extends CordovaPlugin {
   }
 
 
-  private void getRssi(String address, CallbackContext callback) throws Exception {
-    BluetoothGatt gatt = connectedGattServers.get(address);
-    rssiCallback = callback;
-    boolean result = gatt.readRemoteRssi();
-
-    if (!result) {
-      throw new Exception("Could not initiate BluetoothGatt#readRemoteRssi. Android didn't tell us why either.");
-    }
-  }
-
-
   private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
     @Override
-    public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-      if (newState == BluetoothProfile.STATE_CONNECTED) {
-        gatt.discoverServices();
-      }
-      else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-        if (disconnectCallback == null) {
-          // the user didn't ask for a disconnect, meaning we were dropped
-          //connectedGattServers.remove(gatt.getDevice().getAddress());
-          //readWriteCallbacks.clear();
+    public void onConnectionStateChange(final BluetoothGatt gatt, final int status, final int newState) {
+      cordova.getActivity().runOnUiThread(new Runnable() {
+        public void run() {
+          if (newState == BluetoothProfile.STATE_CONNECTED) {
+            gatt.discoverServices();
+          }
+          else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+            if (disconnectCallback == null) {
+              // the user didn't ask for a disconnect, meaning we were dropped
+              Log.v("bluetoothle", onDeviceDroppedCallback.getCallbackId());
+              JSONObject obj = JSONObjects.asDevice(gatt, getBluetoothManager());
+              PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, obj);
+              pluginResult.setKeepCallback(true);
+              onDeviceDroppedCallback.sendPluginResult(pluginResult);
+              return;
+            }
 
-          Log.v("bluetoothle", onDeviceDroppedCallback.getCallbackId());
-          JSONObject obj = JSONObjects.asDevice(gatt, getBluetoothManager());
-          PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, obj);
-          pluginResult.setKeepCallback(true);
-          onDeviceDroppedCallback.sendPluginResult(pluginResult);
-          return;
-        }
-
-        disconnectCallback.success(JSONObjects.asDevice(gatt, getBluetoothManager()));
-        disconnectCallback = null;
-      }
-    }
-
-
-    @Override
-    public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-      if (status == BluetoothGatt.GATT_SUCCESS) {
-        for (BluetoothGattService service : gatt.getServices()) {
-          for (BluetoothGattCharacteristic characteristic : service.getCharacteristics()) {
-            characteristic.getDescriptors();
+            disconnectCallback.success(JSONObjects.asDevice(gatt, getBluetoothManager()));
+            disconnectCallback = null;
           }
         }
-
-        connectedGattServers.put(gatt.getDevice().getAddress(), gatt);
-        connectCallback.success(JSONObjects.asDevice(gatt, getBluetoothManager()));
-        connectCallback = null;
-      }
-      else {
-        connectCallback.error(JSONObjects.asError(new Exception("Device discovery failed")));
-      }
-
-      connectCallback = null;
+      });
     }
 
 
     @Override
-    public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-      CallbackKey key = new CallbackKey(gatt, characteristic, "readCharacteristicValue");
-      CallbackContext callback = readWriteCallbacks.get(key);
+    public void onServicesDiscovered(final BluetoothGatt gatt, final int status) {
+      cordova.getActivity().runOnUiThread(new Runnable() {
+        public void run() {
+          if (status == BluetoothGatt.GATT_SUCCESS) {
+            for (BluetoothGattService service : gatt.getServices()) {
+              for (BluetoothGattCharacteristic characteristic : service.getCharacteristics()) {
+                characteristic.getDescriptors();
+              }
+            }
 
-      if (callback == null) {
-        Log.e("bluetoothle", "Characteristic " + characteristic.getUuid().toString() + " was read, but apparently nobody asked for it (no callback set)");
-        return;
-      }
+            connectedGattServers.put(gatt.getDevice().getAddress(), gatt);
+            connectCallback.success(JSONObjects.asDevice(gatt, getBluetoothManager()));
+            connectCallback = null;
+          }
+          else {
+            connectCallback.error(JSONObjects.asError(new Exception("Device discovery failed")));
+          }
 
-      if (status == BluetoothGatt.GATT_SUCCESS) {
-        callback.success(Base64.encodeToString(characteristic.getValue(), Base64.NO_WRAP));
-      }
-      else {
-        callback.error(JSONObjects.asError(new Exception("Failed to read characteristic")));
-      }
-
-      readWriteCallbacks.remove(key);
-    }
-
-
-    @Override
-    public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-      if (onCharacteristicValueChangedCallback == null) {
-        return;
-      }
-
-      PluginResult result = new PluginResult(PluginResult.Status.OK, JSONObjects.asCharacteristic(characteristic));
-      result.setKeepCallback(true);
-      onCharacteristicValueChangedCallback.sendPluginResult(result);
-    }
-
-
-    @Override
-    public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-      CallbackKey key = new CallbackKey(gatt, characteristic, "writeCharacteristicValue");
-      CallbackContext callback = readWriteCallbacks.get(key);
-
-      if (callback == null) {
-        Log.e("bluetoothle", "Characteristic " + characteristic.getUuid().toString() + " was written, but apparently nobody asked for it (no callback set)");
-        return;
-      }
-
-      if (status == BluetoothGatt.GATT_SUCCESS) {
-        callback.success(JSONObjects.asCharacteristic(characteristic));
-      }
-      else {
-        callback.error(JSONObjects.asError(new Exception("Failed to write characteristic")));
-      }
-
-      readWriteCallbacks.remove(key);
-    }
-
-
-    @Override
-    public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-      CallbackKey key = new CallbackKey(gatt, descriptor, "readDescriptorValue");
-      CallbackContext callback = readWriteCallbacks.get(key);
-
-      if (callback == null) {
-        Log.e("bluetoothle", "Descriptor " + descriptor.getUuid().toString() + " was read, but apparently nobody asked for it (no callback set)");
-        return;
-      }
-
-      if (status == BluetoothGatt.GATT_SUCCESS) {
-        callback.success(JSONObjects.asDescriptor(descriptor));
-      }
-      else {
-        callback.error(JSONObjects.asError(new Exception("Failed to read descriptor " + descriptor.getUuid().toString())));
-      }
-
-      readWriteCallbacks.remove(key);
-    }
-
-
-    @Override
-    public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-      CallbackKey key = new CallbackKey(gatt, descriptor, "writeDescriptorValue");
-      CallbackContext callback = readWriteCallbacks.get(key);
-
-      if (callback == null) {
-        Log.e("bluetoothle", "Descriptor " + descriptor.getUuid().toString() + " was written, but apparently nobody asked for it (no callback set)");
-        return;
-      }
-
-      if (status == BluetoothGatt.GATT_SUCCESS) {
-        callback.success(JSONObjects.asDescriptor(descriptor));
-      }
-      else {
-        callback.error(JSONObjects.asError(new Exception("Failed to write descriptor " + descriptor.getUuid().toString())));
-      }
-
-      readWriteCallbacks.remove(key);
-    }
-
-
-    @Override
-    public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-      BluetoothManager bluetoothManager = (BluetoothManager) cordova.getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
-
-      if (rssiCallback != null) {
-        if (status == BluetoothGatt.GATT_SUCCESS) {
-          rssiCallback.success(rssi);
-        } else {
-          rssiCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
+          connectCallback = null;
         }
-        rssiCallback = null;
-      } else if (deviceInfoCallback != null) {
-        if (status == BluetoothGatt.GATT_SUCCESS) {
-          deviceInfoCallback.success(JSONObjects.asDevice(gatt, bluetoothManager, rssi));
-        } else {
-          deviceInfoCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
-        }
-        deviceInfoCallback = null;
-      } else {
-        return;
-      }
-
+      });
     }
 
+
+    @Override
+    public void onCharacteristicRead(final BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic, final int status) {
+      cordova.getActivity().runOnUiThread(new Runnable() {
+        public void run() {
+          CallbackKey key = new CallbackKey(gatt, characteristic, "readCharacteristicValue");
+          CallbackContext callback = readWriteCallbacks.get(key);
+
+          if (callback == null) {
+            Log.e("bluetoothle", "Characteristic " + characteristic.getUuid().toString() + " was read, but apparently nobody asked for it (no callback set)");
+            return;
+          }
+
+          if (status == BluetoothGatt.GATT_SUCCESS) {
+            callback.success(Base64.encodeToString(characteristic.getValue(), Base64.NO_WRAP));
+          }
+          else {
+            callback.error(JSONObjects.asError(new Exception("Failed to read characteristic")));
+          }
+
+          readWriteCallbacks.remove(key);
+        }
+      });
+    }
+
+
+    @Override
+    public void onCharacteristicChanged(final BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic) {
+      cordova.getActivity().runOnUiThread(new Runnable() {
+        public void run() {
+          if (onCharacteristicValueChangedCallback == null) {
+            return;
+          }
+
+          PluginResult result = new PluginResult(PluginResult.Status.OK, JSONObjects.asCharacteristic(characteristic));
+          result.setKeepCallback(true);
+          onCharacteristicValueChangedCallback.sendPluginResult(result);
+        }
+      });
+    }
+
+
+    @Override
+    public void onCharacteristicWrite(final BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic, final int status) {
+      cordova.getActivity().runOnUiThread(new Runnable() {
+        public void run() {
+          CallbackKey key = new CallbackKey(gatt, characteristic, "writeCharacteristicValue");
+          CallbackContext callback = readWriteCallbacks.get(key);
+
+          if (callback == null) {
+            Log.e("bluetoothle", "Characteristic " + characteristic.getUuid().toString() + " was written, but apparently nobody asked for it (no callback set)");
+            return;
+          }
+
+          if (status == BluetoothGatt.GATT_SUCCESS) {
+            callback.success(JSONObjects.asCharacteristic(characteristic));
+          }
+          else {
+            callback.error(JSONObjects.asError(new Exception("Failed to write characteristic")));
+          }
+
+          readWriteCallbacks.remove(key);
+        }
+      });
+    }
+
+
+    @Override
+    public void onDescriptorRead(final BluetoothGatt gatt, final BluetoothGattDescriptor descriptor, final int status) {
+      cordova.getActivity().runOnUiThread(new Runnable() {
+        public void run() {
+          CallbackKey key = new CallbackKey(gatt, descriptor, "readDescriptorValue");
+          CallbackContext callback = readWriteCallbacks.get(key);
+
+          if (callback == null) {
+            Log.e("bluetoothle", "Descriptor " + descriptor.getUuid().toString() + " was read, but apparently nobody asked for it (no callback set)");
+            return;
+          }
+
+          if (status == BluetoothGatt.GATT_SUCCESS) {
+            callback.success(JSONObjects.asDescriptor(descriptor));
+          }
+          else {
+            callback.error(JSONObjects.asError(new Exception("Failed to read descriptor " + descriptor.getUuid().toString())));
+          }
+
+          readWriteCallbacks.remove(key);
+        }
+      });
+    }
+
+
+    @Override
+    public void onDescriptorWrite(final BluetoothGatt gatt, final BluetoothGattDescriptor descriptor, final int status) {
+      cordova.getActivity().runOnUiThread(new Runnable() {
+        public void run() {
+          CallbackKey key = new CallbackKey(gatt, descriptor, "writeDescriptorValue");
+          CallbackContext callback = readWriteCallbacks.get(key);
+
+          if (callback == null) {
+            Log.e("bluetoothle", "Descriptor " + descriptor.getUuid().toString() + " was written, but apparently nobody asked for it (no callback set)");
+            return;
+          }
+
+          if (status == BluetoothGatt.GATT_SUCCESS) {
+            callback.success(JSONObjects.asDescriptor(descriptor));
+          }
+          else {
+            callback.error(JSONObjects.asError(new Exception("Failed to write descriptor " + descriptor.getUuid().toString())));
+          }
+
+          readWriteCallbacks.remove(key);
+        }
+      });
+    }
+
+
+    @Override
+    public void onReadRemoteRssi(final BluetoothGatt gatt, final int rssi, final int status) {
+      cordova.getActivity().runOnUiThread(new Runnable() {
+        public void run() {
+          BluetoothManager bluetoothManager = (BluetoothManager) cordova.getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
+
+          if (rssiCallback != null) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+              rssiCallback.success(rssi);
+            } else {
+              rssiCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
+            }
+            rssiCallback = null;
+          } else if (deviceInfoCallback != null) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+              deviceInfoCallback.success(JSONObjects.asDevice(gatt, bluetoothManager, rssi));
+            } else {
+              deviceInfoCallback.error(JSONObjects.asError(new Exception("Received an error after attempting to read RSSI for device " + gatt.getDevice().getAddress())));
+            }
+            deviceInfoCallback = null;
+          } else {
+            return;
+          }
+        }
+      });
+    }
   };
 
 
   private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
     @Override
-    public void onReceive(Context context, Intent intent) {
-      if (onAdapterStateChangedCallback == null) {
-        return;
-      }
+    public void onReceive(final Context context, final Intent intent) {
+      cordova.getActivity().runOnUiThread(new Runnable() {
+        public void run() {
+          if (onAdapterStateChangedCallback == null) {
+            return;
+          }
 
-      if (intent.getAction().equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
-        int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+          if (intent.getAction().equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+            int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
 
-        if (state == BluetoothAdapter.STATE_OFF) {
-          connectedGattServers = new HashMap<String, BluetoothGatt>();
+            if (state == BluetoothAdapter.STATE_OFF) {
+              connectedGattServers = new HashMap<String, BluetoothGatt>();
+            }
+
+            if (state == BluetoothAdapter.STATE_OFF || state == BluetoothAdapter.STATE_ON) {
+              JSONObject obj = JSONObjects.asAdapter(getBluetoothManager().getAdapter());
+              PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, obj);
+              pluginResult.setKeepCallback(true);
+              onAdapterStateChangedCallback.sendPluginResult(pluginResult);
+            }
+          }
         }
-
-        if (state == BluetoothAdapter.STATE_OFF || state == BluetoothAdapter.STATE_ON) {
-          JSONObject obj = JSONObjects.asAdapter(getBluetoothManager().getAdapter());
-          PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, obj);
-          pluginResult.setKeepCallback(true);
-          onAdapterStateChangedCallback.sendPluginResult(pluginResult);
-        }
-      }
+      });
     }
   };
 
@@ -775,7 +790,15 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
     @Override
     public int hashCode() {
-      return Objects.hash(gatt, scd, operation);
+      int hash = 1;
+      hash = 31 * hash + gatt.hashCode();
+      hash = 31 * hash + scd.hashCode();
+      hash = 31 * hash + operation.hashCode();
+      return hash;
+    }
+
+    public boolean equals(Object a, Object b) {
+      return (a == b) || (a != null && a.equals(b));
     }
 
     @Override
@@ -784,9 +807,9 @@ public class BluetoothLePlugin extends CordovaPlugin {
         return false;
       }
       return
-        Objects.equals(((CallbackKey)obj).gatt, gatt) &&
-        Objects.equals(((CallbackKey)obj).scd, scd) &&
-        Objects.equals(((CallbackKey)obj).operation, operation);
+        equals(((CallbackKey)obj).gatt, gatt) &&
+        equals(((CallbackKey)obj).scd, scd) &&
+        equals(((CallbackKey)obj).operation, operation);
     }
   }
 
