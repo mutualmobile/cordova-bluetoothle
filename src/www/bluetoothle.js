@@ -420,8 +420,6 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
 
   // Android-specific fixes
   if (isAndroid) {
-    cordova.exec.setNativeToJsBridgeMode(1);
-
     // observed, undocumented:
     // android.bluetooth.BluetoothGattCallback#onConnectionStateChange does not
     // seem to be accurate. I get dropped connections and failed commands
@@ -433,7 +431,7 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
         exec('connect', [address]).then(function(device) {
           setTimeout(function() {
             resolve(device);
-          }, 100);
+          }, 10);
         }, reject);
       });
     };
