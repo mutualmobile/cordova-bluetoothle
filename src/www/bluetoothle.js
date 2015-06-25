@@ -44,7 +44,7 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
           processTasks();
         }
       );
-    }, 16);
+    }, 0);
   };
 
 
