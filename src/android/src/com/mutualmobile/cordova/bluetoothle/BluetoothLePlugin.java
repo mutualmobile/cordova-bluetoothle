@@ -629,17 +629,13 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
     @Override
     public void onCharacteristicChanged(final BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic) {
-      cordova.getActivity().runOnUiThread(new Runnable() {
-        public void run() {
-          if (onCharacteristicValueChangedCallback == null) {
-            return;
-          }
+      if (onCharacteristicValueChangedCallback == null) {
+        return;
+      }
 
-          PluginResult result = new PluginResult(PluginResult.Status.OK, JSONObjects.asCharacteristic(characteristic));
-          result.setKeepCallback(true);
-          onCharacteristicValueChangedCallback.sendPluginResult(result);
-        }
-      });
+      PluginResult result = new PluginResult(PluginResult.Status.OK, JSONObjects.asCharacteristic(characteristic));
+      result.setKeepCallback(true);
+      onCharacteristicValueChangedCallback.sendPluginResult(result);
     }
 
 
