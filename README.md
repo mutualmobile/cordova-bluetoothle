@@ -119,6 +119,15 @@ energy devices:
   - callback for a Descriptor notification/indication
 
 
+Extras
+------
+
+* isSupported () : boolean
+  - `true` if the current device supports Bluetooth LE communication
+* isConnected (String deviceAddress) : boolean
+  - `true` if the specified device is connected to the phone's bluetooth adapter
+
+
 License
 -------
 

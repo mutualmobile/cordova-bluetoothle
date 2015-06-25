@@ -27,6 +27,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.util.Base64;
 import android.util.Log;
 
@@ -81,6 +82,11 @@ public class BluetoothLePlugin extends CordovaPlugin {
       }
       else if ("disconnect".equals(action)) {
         disconnect(args.getString(0), callback);
+      }
+      else if ("isSupported".equals(action)) {
+        JSONObject result = new JSONObject();
+        result.put("isSupported", isSupported());
+        callback.success(result);
       }
       else if ("isConnected".equals(action)) {
         JSONObject result = new JSONObject();
@@ -257,6 +263,14 @@ public class BluetoothLePlugin extends CordovaPlugin {
     BluetoothManager bluetoothManager = getBluetoothManager();
     bluetoothManager.getAdapter().stopLeScan(scanCallback);
     callback.success();
+  }
+
+
+  private boolean isSupported() {
+    if (android.os.Build.VERSION.SDK_INT >= 18){
+      return cordova.getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
+    }
+    return false;
   }
 
 

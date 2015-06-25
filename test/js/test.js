@@ -13,6 +13,13 @@ describe('bluetoothle', function() {
   });
 
 
+  it('isSupported', function() {
+    return bluetoothle.isSupported().then(function(result) {
+      chai.assert(result === true, 'isSupported() should return true');
+    });
+  });
+
+
   it('getAdapterState', function() {
     return bluetoothle.getAdapterState().then(function(state) {
       chai.assert.property(state, 'address');
