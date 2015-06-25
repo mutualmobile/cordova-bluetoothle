@@ -7,7 +7,14 @@ describe('bluetoothle', function() {
   before(function(done) {
     var device = sessionStorage.getItem('device');
     if (device) {
-      bluetoothle.disconnect(device).then(bluetoothle.stopDiscovery, bluetoothle.stopDiscovery).then(function() { done(); }, function() { done(); });
+      bluetoothle.disconnect(device).then(bluetoothle.stopDiscovery, bluetoothle.stopDiscovery)
+        .then(function() {
+          done();
+        },
+        function(e) {
+          console.error(e);
+          done();
+        });
     }
     setTimeout(done, 5000);
   });
@@ -36,40 +43,65 @@ describe('bluetoothle', function() {
 
 
   var blueSimDevice = '';
+  var devices = [];
 
   it('startDiscovery', function(done) {
     console.log("startDiscovery started");
-    // for multiple developers: avoid trampling on each others' BT adapters by
-    // only connecting to the closest BlePluginSim
-    var devices = [];
-    bluetoothle.on('deviceAdded', function(device) {
-      if (device.name === 'BlePluginSim') {
-        devices.push(device);
-        console.log('BLUESIM', device);
-      }
-    });
-
-    setTimeout(function() {
-      var closest = devices[0];
-      devices.forEach(function(d) {
-        if (d.rssi > closest.rssi) {
-          closest = d;
-        }
-      });
-      console.log('BLUESIM closest', closest);
-      blueSimDevice = closest;
-      bluetoothle.off('deviceAdded');
-      done();
-    }, 3000);
+    devices = [];
 
     bluetoothle.startDiscovery().then(function(state) {
+      done();
       console.log("startDiscovery state: "+state);
       console.log(state);
     });
   });
 
 
-  it('onDeviceAdded', function() {
+  it('onDeviceAdded', function(done) {
+    // for multiple developers: avoid trampling on each others' BT adapters by
+    // only connecting to the closest BlePluginSim
+    bluetoothle.on('deviceAdded', function(device) {
+      console.log(device);
+      if (device.name === 'BlePluginSim') {
+        console.log('BLUESIM', device);
+        blueSimDevice = device;
+        done();
+      }
+    });
+  });
+
+
+/*
+ *  it('onDeviceAdded', function() {
+ *    // for multiple developers: avoid trampling on each others' BT adapters by
+ *    // only connecting to the closest BlePluginSim
+ *    bluetoothle.on('deviceAdded', function(device) {
+ *      console.log(device);
+ *      if (device.name === 'BlePluginSim') {
+ *        devices.push(device);
+ *        console.log('BLUESIM', device);
+ *      }
+ *    });
+ *
+ *    return new Promise(function(resolve) {
+ *      setTimeout(resolve, 5000);
+ *    }).then(function() {
+ *      var closest = devices[0];
+ *      devices.forEach(function(d) {
+ *        if (d.rssi > closest.rssi) {
+ *          closest = d;
+ *        }
+ *      });
+ *      console.log('BLUESIM closest', closest);
+ *      blueSimDevice = closest;
+ *      bluetoothle.off('deviceAdded');
+ *
+ *    });
+ *  });
+ */
+
+
+  it('onDeviceAdded (device object check)', function() {
     chai.assert.property(blueSimDevice, 'address');
     chai.assert.property(blueSimDevice, 'name');
     chai.assert.property(blueSimDevice, 'rssi');
@@ -84,6 +116,7 @@ describe('bluetoothle', function() {
 
 
   it('stopDiscovery', function() {
+    bluetoothle.off('deviceAdded');
     return bluetoothle.stopDiscovery();
   });
 
@@ -137,21 +170,8 @@ describe('bluetoothle', function() {
     });
   });
 
-
-  it('getDevice', function() {
-    return bluetoothle.getDevice(blueSimDevice.address).then(function(result) {
-      console.log('rssi:'+result.rssi);
-      //chai.assert.property(result, 'address');
-      chai.assert.property(result, 'name');
-      chai.assert.property(result, 'rssi');
-      chai.assert.property(result, 'connected');
-      chai.assert.property(result, 'uuids');
-      //chai.assert.isString(result.address);
-      chai.assert.isString(result.name);
-      chai.assert.isNumber(result.rssi);
-      chai.assert.isBoolean(result.connected);
-      chai.assert.isArray(result.uuids);
-    });
+  it('startCharacteristicNotifications', function() {
+    return bluetoothle.startCharacteristicNotifications(blueSimDevice.address, '180d', '2a37');
   });
 
 
@@ -245,6 +265,32 @@ describe('bluetoothle', function() {
   });
 
 
+/*
+ *  it('onCharacteristicValueChanged (rate)', function(done) {
+ *    var start = Date.now();
+ *    var counter = 0;
+ *
+ *    bluetoothle.on('characteristicValueChanged', function() {
+ *      console.log('characteristicValueChanged', Date.now());
+ *      counter++;
+ *
+ *      if (counter >= 5) {
+ *        bluetoothle.off('characteristicValueChanged');
+ *        var elapsed = Date.now() - start;
+ *        var hz = (counter / elapsed) * 1000;
+ *        try {
+ *          chai.assert(hz >= 10, 'Can receive notifications at at least 10hz');
+ *        }
+ *        catch(e) {
+ *          done(e);
+ *        }
+ *        done();
+ *      }
+ *    });
+ *  });
+ */
+
+
   it('stopCharacteristicNotifications', function() {
     return bluetoothle.stopCharacteristicNotifications(blueSimDevice.address, '180d', '2a37');
   });
@@ -261,11 +307,6 @@ describe('bluetoothle', function() {
       chai.assert(result === false, 'isConnected() should return false');
     });
   });
-
-
-  //it('disconnect twice in a row', function() {
-    //return bluetoothle.disconnect(blueSimDevice.address);
-  //});
 
 
   describe('should clear the command queue on disconnect', function(done) {
@@ -308,5 +349,6 @@ describe('bluetoothle', function() {
     });
 
   });
+
 
 });
