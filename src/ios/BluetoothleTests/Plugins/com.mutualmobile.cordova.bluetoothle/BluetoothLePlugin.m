@@ -220,6 +220,16 @@ NSString * const DeviceUUIDS = @"uuids";
     centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil options:@{ CBCentralManagerOptionRestoreIdentifierKey:@"bluetoothleplugin", CBCentralManagerOptionShowPowerAlertKey:request }];
 }
 
+- (void)isSupported:(CDVInvokedUrlCommand *)command
+{
+    NSNumber* result = [NSNumber numberWithBool:(centralManager != nil && centralManager.state != CBCentralManagerStateUnsupported)];
+    
+    NSDictionary* returnObj = [NSDictionary dictionaryWithObjectsAndKeys: result, @"isSupported", nil];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:returnObj];
+    [pluginResult setKeepCallbackAsBool:true];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
 - (void)startDiscovery:(CDVInvokedUrlCommand *)command
 {
     //Ensure Bluetooth is enabled

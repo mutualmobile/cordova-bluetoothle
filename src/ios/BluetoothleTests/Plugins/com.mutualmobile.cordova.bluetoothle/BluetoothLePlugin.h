@@ -18,6 +18,7 @@
 }
 
 - (void)initialize:(CDVInvokedUrlCommand *)command;
+- (void)isSupported:(CDVInvokedUrlCommand *)command;
 //- (void)startScan:(CDVInvokedUrlCommand *)command;
 - (void)stopScan:(CDVInvokedUrlCommand *)command;
 - (void)connect:(CDVInvokedUrlCommand *)command;
