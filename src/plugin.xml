@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="com.mutualmobile.cordova.bluetoothle" version="1.0.2">
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="com.mutualmobile.cordova.bluetoothle" version="1.0.1">
     <engines>
         <engine name="cordova" version=">=3.0.0" />
     </engines>
-    <name>Bluetooth LE</name>
-    <description>Use the Bluetooth Low Energy plugin to connect your Phonegap app to new Bluetooth devices like heart rate monitors, thermometers, etc...</description>
-    <author>Rand Dusing</author>
+    <name>MM Cordova Bluetooth LE Plugin</name>
+    <description>Connect with devices using Bluetooth Low Energy communication</description>
     <keywords>bluetooth,low energy,smart</keywords>
     <license>Apache 2.0</license>
     <js-module src="www/bluetoothle.js" name="BluetoothLe">
@@ -45,5 +44,4 @@
         <source-file src="src/ios/BaseReturnObjectType.m" />
         <framework src="CoreBluetooth.framework" />
     </platform>
-    <info>For more info: http://randdusing.com/</info>
 </plugin>

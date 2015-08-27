@@ -769,7 +769,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
           if (intent.getAction().equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
             int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
 
-            if (state == BluetoothAdapter.STATE_OFF) {
+            if (state == BluetoothAdapter.STATE_ON) {
               connectedGattServers = new HashMap<String, BluetoothGatt>();
             }
 
