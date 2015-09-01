@@ -217,7 +217,7 @@ public class BluetoothLePlugin extends CordovaPlugin {
   }
 
   private void getDeviceInfo(String address, CallbackContext callback) throws Exception {
-	BluetoothGatt gatt = connectedGattServers.get(address);
+  BluetoothGatt gatt = connectedGattServers.get(address);
     deviceInfoCallback = callback;
     boolean result = gatt.readRemoteRssi();
 
@@ -291,9 +291,11 @@ public class BluetoothLePlugin extends CordovaPlugin {
       callback.success();
       return;
     }
+
     connectCallback = callback;
     BluetoothDevice device = getDevice(address);
-    device.connectGatt(cordova.getActivity().getApplicationContext(), false, gattCallback);
+    BluetoothGatt gatt = device.connectGatt(cordova.getActivity().getApplicationContext(), false, gattCallback);
+    connectedGattServers.put(gatt.getDevice().getAddress(), gatt);
   }
 
 
@@ -573,17 +575,18 @@ public class BluetoothLePlugin extends CordovaPlugin {
             gatt.discoverServices();
           }
           else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+            JSONObject obj = JSONObjects.asDevice(gatt, getBluetoothManager());
+
             if (disconnectCallback == null) {
               // the user didn't ask for a disconnect, meaning we were dropped
               Log.v("bluetoothle", onDeviceDroppedCallback.getCallbackId());
-              JSONObject obj = JSONObjects.asDevice(gatt, getBluetoothManager());
               PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, obj);
               pluginResult.setKeepCallback(true);
               onDeviceDroppedCallback.sendPluginResult(pluginResult);
               return;
             }
 
-            disconnectCallback.success(JSONObjects.asDevice(gatt, getBluetoothManager()));
+            disconnectCallback.success(obj);
             disconnectCallback = null;
           }
         }
@@ -602,7 +605,6 @@ public class BluetoothLePlugin extends CordovaPlugin {
               }
             }
 
-            connectedGattServers.put(gatt.getDevice().getAddress(), gatt);
             connectCallback.success(JSONObjects.asDevice(gatt, getBluetoothManager()));
             connectCallback = null;
           }
