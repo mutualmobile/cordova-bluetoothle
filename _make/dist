@@ -33,7 +33,7 @@ main() {
   # platform-specific js to the src/www/ copy)
   IFS=$'\n'
   for file in $(find src/www -name '*.js'); do
-    print_between "$file" 2 2 > ./dist/www/"$(basename "$file")"
+    print_between "$file" 1 1 > ./dist/www/"$(basename "$file")"
   done
 
   mkdir -p ./dist/src/android

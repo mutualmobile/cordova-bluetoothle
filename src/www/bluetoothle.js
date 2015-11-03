@@ -1,4 +1,5 @@
 cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(require, exports, module) {
+
   var PLUGIN_NAME = 'BluetoothLePlugin';
   var base64 = require('cordova/base64');
 
