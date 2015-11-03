@@ -23,6 +23,7 @@ main() {
 
   mkdir ./dist
   cp ./src/plugin.xml ./dist/plugin.xml
+  cp ./src/package.json ./dist/package.json
 
   mkdir -p ./dist/www
   cp -a ./src/www/* ./dist/www/

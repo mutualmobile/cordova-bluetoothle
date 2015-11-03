@@ -1,0 +1,36 @@
+{
+  "name": "com.mutualmobile.cordova.bluetoothle",
+  "version": "1.0.3",
+  "description": "Connect with devices using Bluetooth Low Energy communication",
+  "cordova": {
+    "id": "com.mutualmobile.cordova.bluetoothle",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mutualmobile/cordova-bluetoothle.git"
+  },
+  "keywords": [
+    "bluetooth",
+    "low energy",
+    "smart",
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-ios"
+  ],
+  "engines": [
+    {
+      "name": "cordova",
+      "version": ">=3.0.0"
+    }
+  ],
+  "author": "",
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/mutualmobile/cordova-bluetoothle/issues"
+  },
+  "homepage": "https://github.com/mutualmobile/cordova-bluetoothle#readme"
+}
