@@ -1,6 +1,4 @@
 cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(require, exports, module) {
-
-
   var PLUGIN_NAME = 'BluetoothLePlugin';
   var base64 = require('cordova/base64');
 
@@ -523,13 +521,18 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
       clearQueue(address);
       var delay = 100;
 
-      return new Promise(function(resolve, reject) {
-        exec('disconnect', [address]).then(function(device) {
-          setTimeout(function() {
-            resolve(device);
-          }, delay);
-        }, reject);
-      });
+      return Promise.resolve()
+        .then(function() {
+          return exec('disconnect');
+        })
+        .catch(function() {})
+        .then(function() {
+          return exec('close');
+        })
+        .catch(function() {})
+        .then(function() {
+          return new Promise(function(resolve) { setTimeout(resolve, delay); });
+        });
     };
 
     // iOS forces you to choose "write with response" or "write without
