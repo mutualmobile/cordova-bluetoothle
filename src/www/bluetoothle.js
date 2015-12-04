@@ -328,8 +328,11 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
 
     trigger: function(type, args) {
       bluetoothle.callbacks[type] = bluetoothle.callbacks[type] || [];
-      for (var i = 0; i < bluetoothle.callbacks[type].length; i++) {
-        bluetoothle.callbacks[type][i].apply(this, args);
+      // make a copy of the callbacks to trigger, so any callback can call
+      // bluetoothle.off() without affecting subsequent callbacks
+      var callbacks = bluetoothle.callbacks[type].slice(0);
+      for (var i = 0; i < callbacks.length; i++) {
+        callbacks[i].apply(this, args);
       }
     }
   };

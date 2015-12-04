@@ -1,6 +1,6 @@
 {
   "name": "com.mutualmobile.cordova.bluetoothle",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Connect with devices using Bluetooth Low Energy communication",
   "cordova": {
     "id": "com.mutualmobile.cordova.bluetoothle",
