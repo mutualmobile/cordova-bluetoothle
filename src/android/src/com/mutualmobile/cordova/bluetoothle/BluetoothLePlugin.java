@@ -313,9 +313,14 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
   private void close(String address, CallbackContext callback) throws Exception {
     BluetoothGatt gatt = connectedGattServers.get(address);
-    connectedGattServers.remove(gatt.getDevice().getAddress());
-    gatt.close();
-    callback.success();
+    if(gatt != null)
+    {
+      connectedGattServers.remove(gatt.getDevice().getAddress());
+      gatt.close();
+      callback.success();
+    } else {
+      throw new Exception(String.format("No Gatt found with the given address %s", address));
+    }
   }
 
 
