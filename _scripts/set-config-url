@@ -1,0 +1,51 @@
+#!/bin/bash
+
+_dirname=$( dirname $(python2.7 -c "import os,sys; print os.path.realpath('${BASH_SOURCE[0]}')") )
+project_root="$( cd "$_dirname/.." && pwd )"
+
+
+trim() {
+  perl -pe 's/^\s*?//g' | perl -pe 's/\s*$//g'
+}
+
+
+get_developer_machine_ip() {
+  if hash ip &> /dev/null; then
+      ip route get 8.8.8.8 | head -1 | perl -pe 's/.*\s(\S+)/\1/' | trim
+  else
+      route -vn get 8.8.8.8 | tail -1 | perl -pe 's/.*\s(\S+)/\1/' | trim
+  fi
+}
+
+
+insert_ip() {
+  set -e
+
+  # get ip/port of web server, then place into Cordova config as the landing
+  # page
+  if [[ ! $IP ]]; then IP="$(get_developer_machine_ip)"; fi
+  if [[ ! $PORT ]]; then PORT='8000'; fi
+
+  local addr="http://$IP:$PORT/test/index.html"
+  addr="$(echo $addr | sed 's/\//\\\//g')"
+  local contents="$(cat "$1")"
+  local tempfile="tempconfig"
+  touch ./tempconfig
+  cat "$1" | perl -pe 's/<content src=".*/<content src="'$addr'" \/>/' > "$tempfile"
+  cp "$tempfile" "$1"
+  rm "$tempfile"
+}
+
+
+main() {
+  set -ex
+
+  IFS=$'\n'
+  for file in $(find "$project_root/testrunner" -name config.xml); do
+    #touch "$file"
+    insert_ip "$file"
+  done
+}
+
+
+main "$@"

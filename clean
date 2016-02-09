@@ -1,0 +1,10 @@
+#!/bin/bash
+
+_dirname=$( dirname $(python2.7 -c "import os,sys; print os.path.realpath('${BASH_SOURCE[0]}')") )
+
+main() {
+  cd "$_dirname"
+  rm -Rf ./testrunner
+}
+
+main "$@"

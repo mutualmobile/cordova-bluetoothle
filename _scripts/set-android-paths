@@ -1,0 +1,44 @@
+#!/bin/bash
+
+realpath() {
+  readlink -f "$1" 2> /dev/null || python2.7 -c 'import os,sys; print os.path.realpath(sys.argv[1])' "$1"
+}
+
+main() {
+  if [[ ! $ANDROID_HOME ]]; then
+    local android_bin="$(which android)"
+    local adb_bin="$(which adb)"
+    if [[ $android_bin ]]; then
+      export ANDROID_HOME=$( realpath $(dirname "$android_bin")/.. )
+    elif [[ $adb_bin ]]; then
+      export ANDROID_HOME=$( realpath $(dirname "$adb_bin")/.. )
+    elif [[ -e ~/Android/Sdk/ ]]; then
+      export ANDROID_HOME=$( realpath ~/Android/Sdk/ )
+    elif [[ -e ~/Library/Android/sdk/ ]]; then
+      export ANDROID_HOME=$( realpath ~/Library/Android/sdk/ )
+    else
+      printf "Couldn't find the Android SDK! Please install Android Studio *or* set the ANDROID_HOME environment variable *or* make sure the \`android\` or \`adb\` binary is in your PATH.\n" 1>&2
+      exit 1
+    fi
+  fi
+
+  if [[ ! $JAVA_HOME ]]; then
+    local javac_bin="$(which javac)"
+    export JAVA_HOME=$( /usr/libexec/java_home 2> /dev/null || realpath $(dirname "$javac_bin")/.. )
+  fi
+
+  export PATH="$PATH:$ANDROID_HOME/tools"
+  export PATH="$PATH:$ANDROID_HOME/platform-tools"
+  export PATH="$PATH:$ANDROID_HOME/build-tools/23.0.1"
+
+  if [[ ! -e "$ANDROID_HOME/build-tools/23.0.1" ]]; then
+    local build_tools="$ANDROID_HOME/build-tools/$( ls "$ANDROID_HOME/build-tools" | grep -v preview | grep -v _rc | tail -n 1 )"
+    if [[ ! -e $build_tools ]]; then
+      printf "Couldn't find a version of the Android build-tools installed! Please run the `android` binary to install them.\n" 1&>2
+      exit 1
+    fi
+    export PATH="$PATH:$build_tools"
+  fi
+}
+
+main "$@"

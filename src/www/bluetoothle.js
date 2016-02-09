@@ -1,4 +1,13 @@
-cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(require, exports, module) {
+// cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(require, exports, module) {
+
+(function(factory) {
+  if (typeof exports === 'object') {
+    factory(require, exports, module);
+  }
+  else {
+    cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", factory);
+  }
+})(function(require, exports, module) {
 
   var PLUGIN_NAME = 'BluetoothLePlugin';
   var base64 = require('cordova/base64');

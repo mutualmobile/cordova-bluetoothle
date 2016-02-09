@@ -1,0 +1,18 @@
+#!/bin/bash
+
+_dirname=$( dirname $(python2.7 -c "import os,sys; print os.path.realpath('${BASH_SOURCE[0]}')") )
+
+main() {
+  source "$_dirname/set-android-paths"
+
+  if [[ ! -e "$ANDROID_HOME/platform-tools" ]]; then
+    echo y | android update sdk --no-ui --all --filter platform-tools
+  fi
+
+  if [[ ! -e "$ANDROID_HOME/build-tools/23.0.1" ]]; then
+    echo y | android update sdk --no-ui --all --filter build-tools-23.0.1
+  fi
+}
+
+main "$@"
+

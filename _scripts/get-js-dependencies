@@ -1,0 +1,56 @@
+#!/bin/bash
+
+_dirname=$( dirname $(python2.7 -c "import os,sys; print os.path.realpath('${BASH_SOURCE[0]}')") )
+_project_root=$( cd "$_dirname/.." && pwd )
+
+
+npm_install() {
+  if [[ ! $npm_package_list ]]; then
+    npm_package_list=$( npm ls --depth 0 )
+  fi
+  if ! echo "$npm_package_list" | grep "$1" &> /dev/null; then
+    npm install "$1"
+  fi
+}
+
+
+main() {
+  set -ex
+
+  mkdir -p "$_project_root/dependencies"
+  pushd "$_project_root/dependencies"
+
+  if [[ ! -e ./node ]]; then
+    if uname | grep Darwin &> /dev/null; then
+      curl -L https://nodejs.org/dist/v5.5.0/node-v5.5.0-darwin-x64.tar.xz > node.tar.xz
+    elif uname | grep Linux &> /dev/null; then
+      curl -L https://nodejs.org/dist/v5.5.0/node-v5.5.0-linux-x64.tar.xz > node.tar.xz
+    fi
+
+    mkdir -p ./node
+    tar --xz -xf node.tar.xz -C ./node
+    rm node.tar.xz
+  fi
+
+  local node_executable=$( find "$(pwd)/node" -type f -name node )
+  local node_bin=$( cd $( dirname "$node_executable" ) && pwd )
+  export PATH="$node_bin:$PATH"
+
+  npm_install cordova@5.4.1
+  npm_install bleno@0.3.5
+  npm_install jquery@2.1.1
+  npm_install mocha@1.21.4
+  npm_install chai@1.9.1
+  npm_install http-server@0.7.2
+  npm_install q@1.4.1
+
+  if uname | grep Darwin &> /dev/null; then
+    npm_install ios-deploy@1.8.0
+  fi
+
+  npm_install bluebird@3.1.1
+  popd
+}
+
+
+main "$@"

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+
+main() {
+  local _dirname=$( dirname $(python2.7 -c "import os,sys; print os.path.realpath('${BASH_SOURCE[0]}')") )
+  local _project_root=$( cd "$_dirname/.." && pwd )
+
+  export PATH="$_project_root/dependencies/node_modules/cordova/bin:$PATH"
+  export PATH="$_project_root/dependencies/node_modules/ios-deploy/build/Release:$PATH"
+
+  local node_executable=$( find "$_project_root/dependencies/node" -type f -name node )
+  local node_bin=$( cd $( dirname "$node_executable" ) && pwd )
+  export PATH="$node_bin:$PATH"
+}
+
+main "@"

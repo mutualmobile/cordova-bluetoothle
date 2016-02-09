@@ -13,7 +13,7 @@ modified because:
    Chrome's API. It seems pretty necessary to me to distinguish between
    multiple devices.
 
-There are two parts of that API needed to interact with Bluetooth low
+There are two parts of Chrome's API needed to interact with Bluetooth low
 energy devices:
 
 
@@ -126,6 +126,12 @@ Extras
   - `true` if the current device supports Bluetooth LE communication
 * isConnected (String deviceAddress) : boolean
   - `true` if the specified device is connected to the phone's bluetooth adapter
+
+
+Hacking/Contributing
+--------------------
+
+See CONTRIBUTING.md!
 
 
 License
