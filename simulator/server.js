@@ -2,12 +2,27 @@ var bleno = require('bleno');
 var child = require('child_process');
 
 
+var longUuid = function(uuid) {
+  return '0000' + uuid + '-0000-1000-8000-00805f9b34fb';
+};
+
+var shortUuid = function(uuid) {
+  return uuid.slice(4, 8);
+};
+
+
 var heartrate = new bleno.PrimaryService({
-  uuid: '0000' + '180d' + '-0000-1000-8000-00805f9b34fb',
+  uuid: longUuid('180D'),
   characteristics: [
     new bleno.Characteristic({
-      uuid: '0000' + '2a37' + '-0000-1000-8000-00805f9b34fb',
-      properties: ['notify']
+      uuid: longUuid('2A37'),
+      properties: ['notify'],
+      onSubscribe: function(maxValueSize, updateValueCallback) {
+        this.updateValueCallback = updateValueCallback;
+      },
+      onUnsubscribe: function() {
+        this.updateValueCallback = null;
+      }
     })
   ]
 });
@@ -26,10 +41,10 @@ setInterval(function() {
 
 
 var command = new bleno.PrimaryService({
-  uuid: '0000' + 'fff0' + '-0000-1000-8000-00805f9b34fb',
+  uuid: longUuid('FFF0'),
   characteristics: [
     new bleno.Characteristic({
-      uuid: '0000' + 'fff1' + '-0000-1000-8000-00805f9b34fb',
+      uuid: longUuid('FFF1'),
       properties: ['read', 'write'],
       onReadRequest: function(offset, callback) {
         callback(this.RESULT_SUCCESS, this.value);
@@ -40,7 +55,7 @@ var command = new bleno.PrimaryService({
       }
     }),
     new bleno.Characteristic({
-      uuid: '0000' + 'fff2' + '-0000-1000-8000-00805f9b34fb',
+      uuid: longUuid('FFF2'),
       properties: ['read', 'writeWithoutResponse'],
       onReadRequest: function(offset, callback) {
         callback(this.RESULT_SUCCESS, this.value);
@@ -51,7 +66,7 @@ var command = new bleno.PrimaryService({
       }
     }),
     new bleno.Characteristic({
-      uuid: '0000' + 'fff3' + '-0000-1000-8000-00805f9b34fb',
+      uuid: longUuid('FFF3'),
       properties: ['read', 'write'],
       onReadRequest: function(offset, callback) {
         callback(this.RESULT_SUCCESS, this.value);
@@ -75,20 +90,23 @@ var command = new bleno.PrimaryService({
 });
 
 
-var services = [
-  heartrate,
-  command
-];
-
-
-bleno.setServices(services, console.error);
-
 bleno.on('stateChange', function(state) {
   console.log('on -> stateChange: ' + state);
 
   if (state === 'poweredOn') {
-    bleno.startAdvertising('BlePluginSim', [heartrate.uuid, command.uuid]);
+    bleno.startAdvertising('BlePluginSim', [shortUuid(command.uuid), shortUuid(heartrate.uuid)]);
   } else {
     bleno.stopAdvertising();
+  }
+});
+
+
+bleno.on('advertisingStart', function(error) {
+  console.log('on -> advertisingStart: ' + (error ? 'error ' + error : 'success'));
+
+  if (!error) {
+    bleno.setServices([command, heartrate], function(error){
+      console.log('setServices: '  + (error ? 'error ' + error : 'success'));
+    });
   }
 });

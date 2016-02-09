@@ -16,8 +16,30 @@
     });
   };
 
-  document.addEventListener('deviceready', function() {
+  var ready = function() {
+    return Promise.all([
+      new Promise(function(resolve) {
+        window.jQuery(document).ready(function() {
+          console.log('document ready');
+          resolve();
+        });
+      }),
+      new Promise(function(resolve) {
+        if (window.cordova) {
+          document.addEventListener('deviceready', function() {
+            console.log('device ready');
+            resolve();
+          }, false);
+        }
+        else {
+          resolve();
+        }
+      })
+    ]);
+  };
+
+  ready().then(function() {
     loop();
-  }, false);
+  });
 
 })();
