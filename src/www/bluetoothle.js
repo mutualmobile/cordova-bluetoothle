@@ -7,9 +7,6 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
   var taskIsRunning = false;
   var processTimeout;
 
-  // Queue all operations
-  // https://stackoverflow.com/questions/18011816/has-native-android-ble-gatt-implementation-synchronous-nature
-  // https://stackoverflow.com/questions/17870189/android-4-3-bluetooth-low-energy-unstable
   var processTasks = function() {
     if (!queue.length) {
       return;
@@ -422,18 +419,11 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
 
   // Android-specific fixes
   if (isAndroid) {
-    // observed, undocumented:
-    // android.bluetooth.BluetoothGattCallback#onConnectionStateChange does not
-    // seem to be accurate. I get dropped connections and failed commands
-    // somewhat often unless I let connect() and disconnect() "settle" after
-    // the call.
     bluetoothle.connect = function(address) {
       clearQueue(address);
       return new Promise(function(resolve, reject) {
         exec('connect', [address]).then(function(device) {
-          setTimeout(function() {
-            resolve(device);
-          }, 10);
+          resolve(device);
         }, reject);
       });
     };
@@ -443,13 +433,9 @@ cordova.define("com.mutualmobile.cordova.bluetoothle.BluetoothLe", function(requ
 
       return new Promise(function(resolve, reject) {
         exec('disconnect', [address]).then(function(device) {
-          setTimeout(function() {
-            exec('_close', [address]).then(function() {
-              setTimeout(function() {
-                resolve(device);
-              }, 100);
-            }, reject);
-          }, 100);
+          exec('_close', [address]).then(function() {
+            resolve(device);
+          }, reject);
         }, reject);
       });
     };

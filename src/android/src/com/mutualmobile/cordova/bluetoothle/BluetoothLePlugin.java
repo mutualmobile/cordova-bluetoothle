@@ -572,10 +572,23 @@ public class BluetoothLePlugin extends CordovaPlugin {
 
 
   private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+
     @Override
     public void onConnectionStateChange(final BluetoothGatt gatt, final int status, final int newState) {
       cordova.getActivity().runOnUiThread(new Runnable() {
         public void run() {
+          if (status != BluetoothGatt.GATT_SUCCESS) {
+            if (connectCallback != null) {
+              connectCallback.error(JSONObjects.asError(new Exception(String.format("Connect failed with status %d", status))));
+              connectCallback = null;
+            }
+            if (disconnectCallback != null) {
+              disconnectCallback.error(JSONObjects.asError(new Exception(String.format("Disconnect failed with status %d", status))));
+              disconnectCallback = null;
+            }
+            return;
+          }
+
           if (newState == BluetoothProfile.STATE_CONNECTED) {
             gatt.discoverServices();
           }
