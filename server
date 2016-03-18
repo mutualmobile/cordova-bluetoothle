@@ -10,6 +10,7 @@ main() {
   ./_scripts/set-config-url
   ./dependencies/node_modules/http-server/bin/http-server -p 8000 -c-1 &
 
+  source ./_scripts/set-js-paths
   export NODE_PATH="$project_root/dependencies/node_modules"
   node "$project_root/simulator/server.js" &
 
